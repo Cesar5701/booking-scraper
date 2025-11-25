@@ -1,69 +1,60 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 
-# --- CONFIGURATION & PAGE SETUP ---
+# --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
 st.set_page_config(
     page_title="Análisis de Sentimientos de Hoteles en Tlaxcala",
     page_icon="🏨",
     layout="wide"
 )
 
-# --- DATA LOADING ---
-# --- DATA LOADING ---
+# --- CARGA DE DATOS ---
 INPUT_FILE = "reviews_with_sentiment.csv"
 
-# NUEVA FUNCIÓN: Limpiador de fechas
 def clean_booking_date(date_str):
     if not isinstance(date_str, str): return None
-    # Eliminar textos comunes que Booking pone antes de la fecha
-    # Ej: "Comentó el: 10 de marzo" -> "10 de marzo"
+    # Eliminar prefijos comunes de Booking en español e inglés
     clean = date_str.lower().replace("comentó el:", "").replace("reviewed:", "").strip()
     return clean
 
 @st.cache_data
 def load_data():
-    """Loads the final data and prepares it for visualization."""
+    """Carga los datos finales y los prepara para la visualización."""
     try:
         df = pd.read_csv(INPUT_FILE)
         
-        # CORRECCIÓN: Limpieza y conversión robusta de fechas
+        # --- LIMPIEZA DE FECHAS ---
         if 'date' in df.columns:
-            # 1. Limpiar texto basura
             df['date_clean'] = df['date'].apply(clean_booking_date)
-            # 2. Convertir a datetime (pandas suele ser inteligente con fechas en español, 
-            # pero si falla, 'coerce' evitará que la app se rompa)
-            df['date'] = pd.to_datetime(df['date_clean'], errors='coerce')
-            
-            # Filtrar fechas inválidas para no romper las gráficas
+            # CORRECCIÓN 1: Usamos format='mixed' para silenciar el warning y mejorar la detección
+            df['date'] = pd.to_datetime(df['date_clean'], errors='coerce', format='mixed')
             df = df.dropna(subset=['date'])
 
-        # CORRECIÓN: Asegurar que la columna 'score' sea numérica
+        # --- LIMPIEZA DE PUNTAJES (8,5 -> 8.5) ---
         if 'score' in df.columns:
-            df['score'] = df['score'].astype(str).str.replace(',', '.')
+            df['score'] = df['score'].astype(str).str.replace(',', '.', regex=False)
             df['score'] = pd.to_numeric(df['score'], errors='coerce')
-            df = df.dropna(subset=['score'])
 
-        # Calculate a compound sentiment score for ranking
+        # Calcular métrica compuesta
         df['compound_score'] = df['sentiment_score_pos'] - df['sentiment_score_neg']
         return df
     except FileNotFoundError:
         return None
-    
+
 df = load_data()
-# --- MAIN PAGE ---
+
+# --- PÁGINA PRINCIPAL ---
 st.title("🏨 Dashboard de Análisis de Sentimientos de Hoteles en Tlaxcala")
 st.markdown("Este dashboard interactivo presenta los resultados del análisis de sentimientos de las reseñas de hoteles.")
 
 if df is None:
     st.error(f"❌ No se pudo cargar el archivo '{INPUT_FILE}'. Asegúrate de que el script de entrenamiento haya finalizado correctamente.")
 else:
-    # --- SIDEBAR FILTERS ---
+    # --- FILTROS LATERALES ---
     st.sidebar.header("Filtros")
     
-    # Filter by Hotel
+    # Filtro por Hotel
     hotel_list = ["Todos"] + sorted(df['hotel_name'].unique())
     selected_hotel = st.sidebar.selectbox("Selecciona un Hotel", hotel_list)
 
@@ -72,7 +63,7 @@ else:
     else:
         df_filtered = df
 
-    # --- KEY METRICS ---
+    # --- MÉTRICAS CLAVE ---
     total_reviews = len(df_filtered)
     avg_compound_score = df_filtered['compound_score'].mean()
     avg_rating = df_filtered['score'].mean()
@@ -84,13 +75,13 @@ else:
     col2.metric("Puntuación de Sentimiento Promedio", f"{avg_compound_score:.2f}")
     col3.metric("Calificación Promedio Original", f"{avg_rating:.2f} / 10")
 
-    # --- VISUALIZATIONS ---
+    # --- VISUALIZACIONES ---
     st.header("Visualizaciones")
 
     col_viz1, col_viz2 = st.columns(2)
 
     with col_viz1:
-        # Pie Chart: Sentiment Distribution
+        # Gráfica de Pastel: Distribución de Sentimientos
         st.subheader("Distribución de Sentimientos")
         sentiment_counts = df_filtered['sentiment_label'].value_counts()
         fig_pie = px.pie(
@@ -101,37 +92,45 @@ else:
             color=sentiment_counts.index,
             color_discrete_map={'POS': 'green', 'NEG': 'red', 'NEU': 'royalblue'}
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        # CORRECCIÓN 2: Reemplazamos use_container_width=True por width="stretch" (nueva sintaxis)
+        st.plotly_chart(fig_pie, width="stretch")
 
     with col_viz2:
-        # Bar Chart: Hotel Rankings (only shows in "Todos" mode)
+        # Gráfica de Barras: Ranking de Hoteles
         if selected_hotel == "Todos":
             st.subheader("Ranking de Hoteles por Sentimiento")
-            hotel_sentiment = df.groupby('hotel_name')['compound_score'].mean().sort_values(ascending=False)
             
+            # Crear ranking
+            hotel_sentiment = df.groupby('hotel_name')['compound_score'].mean().sort_values(ascending=False)
             top_n = 10 
-            df_ranking = pd.concat([hotel_sentiment.head(top_n), hotel_sentiment.tail(top_n)]).sort_values(ascending=False)
+            df_ranking_series = pd.concat([hotel_sentiment.head(top_n), hotel_sentiment.tail(top_n)]).sort_values(ascending=False)
+            
+            # Convertimos la Serie a DataFrame para Plotly
+            df_ranking_viz = df_ranking_series.reset_index()
+            df_ranking_viz.columns = ['Hotel', 'Compound Score']
 
             fig_bar = px.bar(
-                df_ranking,
-                x=df_ranking.index,
-                y=df_ranking.values,
+                df_ranking_viz,
+                x='Hotel',
+                y='Compound Score',
                 title=f"Top & Bottom {top_n} Hoteles",
-                labels={'y': 'Sentimiento Promedio', 'x': 'Hotel'},
-                color=df_ranking.values,
+                color='Compound Score',
                 color_continuous_scale=px.colors.diverging.RdYlGn,
                 color_continuous_midpoint=0
             )
             fig_bar.update_layout(xaxis_tickangle=-45)
-            st.plotly_chart(fig_bar, use_container_width=True)
+            # CORRECCIÓN 2: Nueva sintaxis de ancho
+            st.plotly_chart(fig_bar, width="stretch")
         else:
             st.info("El ranking de hoteles se muestra cuando se seleccionan 'Todos' los hoteles.")
 
-    # Time Series: Sentiment over Time
+    # Serie de Tiempo: Sentimiento Mensual
     st.subheader("Evolución del Sentimiento en el Tiempo")
     df_ts = df_filtered.copy()
     df_ts.set_index('date', inplace=True)
-    monthly_sentiment = df_ts.resample('M')['compound_score'].mean().dropna()
+    
+    # CORRECCIÓN 3: Cambiamos 'M' por 'ME' (Month End) para Pandas moderno
+    monthly_sentiment = df_ts.resample('ME')['compound_score'].mean().dropna()
     
     if not monthly_sentiment.empty:
         fig_ts = px.line(
@@ -141,10 +140,11 @@ else:
             title="Sentimiento Promedio Mensual",
             labels={'y': 'Sentimiento Promedio', 'x': 'Mes'}
         )
-        st.plotly_chart(fig_ts, use_container_width=True)
+        # CORRECCIÓN 2: Nueva sintaxis de ancho
+        st.plotly_chart(fig_ts, width="stretch")
     else:
         st.warning("No hay suficientes datos de fecha para mostrar la evolución temporal.")
 
-    # --- RAW DATA ---
+    # --- DATOS CRUDOS ---
     with st.expander("Ver datos completos y reseñas"):
         st.dataframe(df_filtered)
