@@ -46,6 +46,37 @@ def clean_and_lemmatize_text(text):
     
     return " ".join(tokens)
 
+def clean_date(date_str):
+    """
+    Cleans and converts a Spanish date string to a standard format (YYYY-MM-DD).
+    Example input: 'Comentó el: 20 de julio de 2023' or 'Reviewed: 20 July 2023'
+    """
+    if not isinstance(date_str, str):
+        return None
+
+    # Unified regex for Spanish and English formats
+    # Handles "20 de julio de 2023" and "20 July 2023"
+    match = re.search(r'(\d{1,2})\s+(?:de\s+)?([a-zA-Z]+)\s+(?:de\s+)?(\d{4})', date_str)
+    if not match:
+        return None  # Return None if format is not recognized
+
+    day, month_name, year = match.groups()
+
+    month_map = {
+        'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04', 'mayo': '05', 'junio': '06',
+        'julio': '07', 'agosto': '08', 'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12',
+        'january': '01', 'february': '02', 'march': '03', 'april': '04', 'may': '05', 'june': '06',
+        'july': '07', 'august': '08', 'september': '09', 'october': '10', 'november': '11', 'december': '12'
+    }
+
+    month = month_map.get(month_name.lower())
+    if not month:
+        return None
+
+    # Pad day with leading zero if necessary
+    return f"{year}-{month}-{day.zfill(2)}"
+
+
 def main():
     """
     Main function to load data, preprocess it, and save the result.

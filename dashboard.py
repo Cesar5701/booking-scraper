@@ -12,23 +12,47 @@ st.set_page_config(
 )
 
 # --- DATA LOADING ---
+# --- DATA LOADING ---
 INPUT_FILE = "reviews_with_sentiment.csv"
+
+# NUEVA FUNCIÓN: Limpiador de fechas
+def clean_booking_date(date_str):
+    if not isinstance(date_str, str): return None
+    # Eliminar textos comunes que Booking pone antes de la fecha
+    # Ej: "Comentó el: 10 de marzo" -> "10 de marzo"
+    clean = date_str.lower().replace("comentó el:", "").replace("reviewed:", "").strip()
+    return clean
 
 @st.cache_data
 def load_data():
     """Loads the final data and prepares it for visualization."""
     try:
         df = pd.read_csv(INPUT_FILE)
-        # Convert date column to datetime objects for time-series analysis
-        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        
+        # CORRECCIÓN: Limpieza y conversión robusta de fechas
+        if 'date' in df.columns:
+            # 1. Limpiar texto basura
+            df['date_clean'] = df['date'].apply(clean_booking_date)
+            # 2. Convertir a datetime (pandas suele ser inteligente con fechas en español, 
+            # pero si falla, 'coerce' evitará que la app se rompa)
+            df['date'] = pd.to_datetime(df['date_clean'], errors='coerce')
+            
+            # Filtrar fechas inválidas para no romper las gráficas
+            df = df.dropna(subset=['date'])
+
+        # CORRECIÓN: Asegurar que la columna 'score' sea numérica
+        if 'score' in df.columns:
+            df['score'] = df['score'].astype(str).str.replace(',', '.')
+            df['score'] = pd.to_numeric(df['score'], errors='coerce')
+            df = df.dropna(subset=['score'])
+
         # Calculate a compound sentiment score for ranking
         df['compound_score'] = df['sentiment_score_pos'] - df['sentiment_score_neg']
         return df
     except FileNotFoundError:
         return None
-
+    
 df = load_data()
-
 # --- MAIN PAGE ---
 st.title("🏨 Dashboard de Análisis de Sentimientos de Hoteles en Tlaxcala")
 st.markdown("Este dashboard interactivo presenta los resultados del análisis de sentimientos de las reseñas de hoteles.")
