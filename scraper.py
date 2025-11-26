@@ -2,6 +2,7 @@ import csv
 import time
 import os
 import random
+import json
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -12,31 +13,38 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
-# --- SCRAPER CONFIGURATION ---
-SEARCH_URL = "https://www.booking.com/searchresults.html?ss=Tlaxcala%2C+Tlaxcala%2C+M%C3%A9xico&lang=en-gb"
-HEADLESS_MODE = True  # Set to True to run the browser in the background
+# --- CONFIGURACIÓN DEL SCRAPER ---
+# Usamos 'lang=es' para asegurar que la interfaz cargue en español
+SEARCH_URL = "https://www.booking.com/searchresults.html?ss=Tlaxcala%2C+Tlaxcala%2C+M%C3%A9xico&lang=es"
+HEADLESS_MODE = False  # False para ver el navegador y evitar bloqueos rápidos
 
-# Limits and Timings
+# Límites y Tiempos
 MAX_WAIT_TIME = 10
-HOTEL_VISIT_LIMIT = 0  # ⚠️ SET TO 0 TO DOWNLOAD ALL
-TIME_BETWEEN_PAGES_MIN = 1.5
-TIME_BETWEEN_PAGES_MAX = 2.5
+HOTEL_VISIT_LIMIT = 0  # 0 = Descargar todos los hoteles encontrados
+TIME_BETWEEN_PAGES_MIN = 2.0
+TIME_BETWEEN_PAGES_MAX = 3.5
 
-# Output Files
+# Archivos de Salida
 FILE_LINKS = "tlaxcala_hotel_links.csv"
 FILE_REVIEWS = "tlaxcala_hotel_reviews_full.csv"
 
 
 def initialize_driver():
-    """Initializes Chrome with anti-detection options and automatic driver management."""
-    print("🚀 Initializing WebDriver...")
+    """Inicializa Chrome con opciones anti-detección y en español."""
+    print("🚀 Iniciando WebDriver...")
     options = Options()
     if HEADLESS_MODE:
         options.add_argument("--headless=new")
+    
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-notifications")
-    options.add_argument("--lang=en-US")
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
+    
+    # Configuración de idioma español
+    options.add_argument("--lang=es-MX")
+    options.add_experimental_option('prefs', {'intl.accept_languages': 'es-MX,es'})
+    
+    # User-Agent moderno para parecer un navegador real
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     options.add_argument("--log-level=3")
     options.add_argument("--disable-blink-features=AutomationControlled")
     
@@ -46,7 +54,7 @@ def initialize_driver():
 
 
 def save_to_csv_append(data, filename, headers):
-    """Saves data in 'append' mode to avoid losing progress."""
+    """Guarda datos en modo 'append' (agregar al final)."""
     if not data: return
     
     file_exists = os.path.isfile(filename)
@@ -56,12 +64,12 @@ def save_to_csv_append(data, filename, headers):
         if not file_exists:
             writer.writeheader()
         writer.writerows(data)
-    print(f"   💾 {len(data)} reviews saved to '{filename}'.")
+    print(f"   💾 {len(data)} reseñas guardadas en '{filename}'.")
 
 
 def get_all_hotel_links(driver, url):
-    """Phase 1: Traverse search results, scroll, and click 'Load more'."""
-    print(f"🌍 Navigating to: {url}")
+    """Fase 1: Obtener enlaces de todos los hoteles en la búsqueda."""
+    print(f"🌍 Navegando a: {url}")
     driver.get(url)
 
     try:
@@ -69,38 +77,37 @@ def get_all_hotel_links(driver, url):
             EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="property-card"]'))
         )
     except TimeoutException:
-        print("❌ Initial results did not load. Aborting.")
+        print("❌ Los resultados iniciales no cargaron. Abortando.")
         return []
 
-    print("🔄 Loading full list (Scroll + 'Load more' button)...")
+    print("🔄 Cargando lista completa (Scroll + Botón 'Cargar más')...")
     scroll_attempts = 0
-    max_attempts_stuck = 3
-
-    while scroll_attempts < max_attempts_stuck:
+    max_attempts = 3
+    
+    while scroll_attempts < max_attempts:
         last_height = driver.execute_script("return document.body.scrollHeight")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(random.uniform(1.5, 2.5))
+        time.sleep(2)
         
         try:
-            load_more_btn = WebDriverWait(driver, 2).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Load more results') or contains(., 'Cargar más resultados')]"))
+            # Selector bilingüe para el botón de cargar más
+            load_more_btn = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Load more') or contains(., 'Cargar más')]"))
             )
             driver.execute_script("arguments[0].click();", load_more_btn)
-            print("   👉 'Load more' button clicked.")
-            
-            WebDriverWait(driver, MAX_WAIT_TIME).until(
-                lambda d: d.execute_script("return document.body.scrollHeight") > last_height
-            )
+            print("   👉 Botón 'Cargar más' clickeado.")
+            time.sleep(3)
             scroll_attempts = 0
-        except TimeoutException:
+        except:
             scroll_attempts += 1
     
-    print("\n🔍 Extracting final links...")
+    print("\n🔍 Extrayendo enlaces finales...")
     elements = driver.find_elements(By.CSS_SELECTOR, 'a[data-testid="title-link"]')
     links = list(dict.fromkeys([e.get_attribute("href") for e in elements if e.get_attribute("href")]))
     
-    print(f"🔗 TOTAL HOTELS FOUND: {len(links)}")
+    print(f"🔗 TOTAL HOTELES ENCONTRADOS: {len(links)}")
     
+    # Guardar respaldo de enlaces
     with open(FILE_LINKS, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["hotel_link"])
@@ -108,109 +115,196 @@ def get_all_hotel_links(driver, url):
         
     return links
 
+
 def _get_safe_text(element, selector):
-    """Safe text extraction helper to keep the code clean."""
+    """Ayuda a extraer texto de forma segura sin romper el script."""
     try:
         return element.find_element(By.CSS_SELECTOR, selector).text.strip()
     except NoSuchElementException:
         return ""
 
+
+def get_hotel_name_robust(driver):
+    """
+    Intenta extraer el nombre del hotel usando JSON-LD (metadatos ocultos)
+    como prioridad, ya que los selectores CSS cambian constantemente.
+    """
+    # ESTRATEGIA 1: JSON-LD (Datos Estructurados - Muy Estable)
+    try:
+        scripts = driver.find_elements(By.XPATH, "//script[@type='application/ld+json']")
+        for script in scripts:
+            content = script.get_attribute("innerHTML")
+            if "Hotel" in content or "LodgingBusiness" in content:
+                data = json.loads(content)
+                if isinstance(data, dict): data = [data]
+                for item in data:
+                    if item.get("@type") in ["Hotel", "LodgingBusiness", "Resort", "Hostel"]:
+                        name = item.get("name")
+                        if name: return name
+    except: pass
+
+    # ESTRATEGIA 2: Meta Tags OpenGraph
+    try:
+        og_title = driver.find_element(By.CSS_SELECTOR, 'meta[property="og:title"]').get_attribute("content")
+        if og_title: return og_title.split(",")[0].strip()
+    except: pass
+
+    # ESTRATEGIA 3: ID Clásico
+    try:
+        id_name = driver.find_element(By.ID, "hp_hotel_name").text.strip()
+        if id_name: return id_name
+    except: pass
+
+    # ESTRATEGIA 4: Selectores Visuales (Fallback)
+    visual_selectors = ['h2.pp-header__title', 'h2[data-testid="post-booking-header-title"]', '.hp__hotel-name']
+    for sel in visual_selectors:
+        txt = _get_safe_text(driver, sel)
+        if txt: return txt
+
+    # ESTRATEGIA 5: Título de la Pestaña
+    try:
+        return driver.title.split("Booking.com")[0].replace("Updated Prices", "").strip().rstrip("-").strip()
+    except:
+        return "Nombre_Desconocido"
+
+
 def extract_reviews_from_hotel(driver, hotel_url):
-    """Phase 2: Enter hotel, get name, open reviews, and paginate to the end."""
+    """Fase 2: Entrar al hotel, obtener nombre, abrir reseñas y paginar."""
     driver.get(hotel_url)
-    time.sleep(random.uniform(2.0, 3.0))
+    time.sleep(random.uniform(2.5, 4.0))
 
-    # Extract hotel name
-    hotel_name = _get_safe_text(driver, 'h2[data-testid="post-booking-header-title"]')
-    if not hotel_name:
-        hotel_name = _get_safe_text(driver, '.pp-header__title') # Fallback selector
+    # 1. Obtener nombre robusto
+    hotel_name = get_hotel_name_robust(driver)
+    print(f"   🏨 Procesando: {hotel_name}")
 
+    # 2. Intentar cerrar popups de login/cookies
     try:
         WebDriverWait(driver, 3).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[aria-label="Dismiss sign-in info."], button[aria-label="Ignorar información sobre el inicio de sesión."]'))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[aria-label*="Dismiss"], button[aria-label*="Ignorar"], button[aria-label*="Cerrar"]'))
         ).click()
     except: pass
 
-    strategies = [
-        (By.CSS_SELECTOR, '[data-testid="review-score-link"]'),
+    # 3. ABRIR PESTAÑA DE RESEÑAS
+    print("      👉 Intentando abrir panel de reseñas...")
+    reviews_opened = False
+    
+    # Lista de estrategias para abrir el panel
+    open_strategies = [
+        (By.CSS_SELECTOR, '[data-testid="review-score-link"]'), # El puntaje grande suele ser clicable
+        (By.ID, "show_reviews_tab"),                           # ID clásico
         (By.CSS_SELECTOR, '[data-testid="guest-reviews-tab-trigger"]'),
-        (By.XPATH, "//a[contains(@href, '#tab-reviews')]"),
-        (By.XPATH, "//*[contains(text(), 'Guest reviews') or contains(text(), 'Comentarios')]")
+        (By.PARTIAL_LINK_TEXT, "Comentarios"),
+        (By.PARTIAL_LINK_TEXT, "Reviews"),
+        (By.XPATH, "//a[contains(@href, '#tab-reviews')]")
     ]
     
-    reviews_opened = False
-    for by, selector in strategies:
+    for by, selector in open_strategies:
         try:
             elem = WebDriverWait(driver, 2).until(EC.element_to_be_clickable((by, selector)))
             driver.execute_script("arguments[0].click();", elem)
-            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="review"]')))
+            # Esperar a que aparezca AL MENOS UNA reseña o el contenedor de lista
+            WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="review"], .c-review-block, .review_list_new_item_block'))
+            )
             reviews_opened = True
+            print(f"      ✅ Panel abierto usando: {selector}")
             break
-        except: continue
+        except Exception:
+            continue
 
     if not reviews_opened:
-        print("   ⚠️ Could not open reviews panel (or hotel has no reviews).")
+        print("   ⚠️ No se pudo abrir la pestaña de reseñas (o no hay reseñas).")
         return []
 
+    # 4. EXTRACCIÓN Y PAGINACIÓN
     collected_reviews = []
     page = 1
     
     while True:
+        # Esperar carga de reseñas en la página actual
         try:
             review_elements = WebDriverWait(driver, 5).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[data-testid="review"]'))
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[data-testid="review"], li.review_item, .c-review-block'))
             )
         except TimeoutException:
+            print("      ⚠️ Tiempo de espera agotado buscando reseñas en esta página.")
             break
 
+        print(f"      📄 Pág {page}: Encontrados {len(review_elements)} elementos.")
+        
+        initial_count = len(collected_reviews)
+        
         for review in review_elements:
             try:
-                title = _get_safe_text(review, '[data-testid="review-title"]')
-                score_text = _get_safe_text(review, '[data-testid="review-score"]')
-                score = score_text.replace("Score:", "").replace("Puntuación:", "").strip()
-                pos = _get_safe_text(review, '[data-testid="review-positive-text"]')
-                neg = _get_safe_text(review, '[data-testid="review-negative-text"]')
-                date = _get_safe_text(review, '[data-testid="review-date"]')
-                country = _get_safe_text(review, '[data-testid="review-author-country"] span')
+                # Extracción con selectores múltiples (fallback)
+                title = _get_safe_text(review, '[data-testid="review-title"], .c-review-block__title')
+                
+                # Score
+                score = _get_safe_text(review, '[data-testid="review-score"], .bui-review-score__badge')
+                score = score.replace("Score:", "").replace("Puntuación:", "").strip()
+                
+                # Texto Positivo/Negativo
+                pos = _get_safe_text(review, '[data-testid="review-positive-text"], .c-review__body--positive')
+                neg = _get_safe_text(review, '[data-testid="review-negative-text"], .c-review__body--negative')
+                
+                # Si no hay pos/neg separados, intentar buscar cuerpo general (raro en Booking, pero posible)
+                if not pos and not neg:
+                    body = _get_safe_text(review, '.c-review-block__row')
+                    if body: pos = body # Guardamos en pos temporalmente
+
+                # Fecha y País
+                date = _get_safe_text(review, '[data-testid="review-date"], .c-review-block__date')
+                country = _get_safe_text(review, '[data-testid="review-author-country"] .bui-avatar-block__subtitle') 
+                if not country:
+                     country = _get_safe_text(review, '.bui-avatar-block__subtitle')
 
                 data = {
-                    "hotel_name": hotel_name, "hotel_url": hotel_url, "title": title, "score": score,
-                    "positive": pos, "negative": neg, "date": date, "country": country
+                    "hotel_name": hotel_name, "hotel_url": hotel_url, 
+                    "title": title, "score": score,
+                    "positive": pos, "negative": neg, 
+                    "date": date, "country": country
                 }
+                
                 if data not in collected_reviews:
                     collected_reviews.append(data)
             except StaleElementReferenceException:
-                continue
+                continue 
+        
+        # Verificar si extrajimos algo nuevo
+        if len(collected_reviews) == initial_count:
+            # A veces hay elementos vacíos o publicidad, intentamos una vez más avanzar
+            pass
 
+        # 5. IR A SIGUIENTE PÁGINA
         try:
-            next_btn = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Next page') or contains(@aria-label, 'Página siguiente')]")
-            if next_btn.is_enabled() and next_btn.is_displayed():
-                driver.execute_script("arguments[0].click();", next_btn)
-                time.sleep(random.uniform(TIME_BETWEEN_PAGES_MIN, TIME_BETWEEN_PAGES_MAX))
-                page += 1
-            else:
-                break 
-        except NoSuchElementException:
-            break
+            # Selector robusto para el botón "Siguiente"
+            next_btn = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="pagination-next-link"], button[aria-label="Next page"], button[aria-label="Página siguiente"]'))
+            )
+            driver.execute_script("arguments[0].click();", next_btn)
+            time.sleep(random.uniform(TIME_BETWEEN_PAGES_MIN, TIME_BETWEEN_PAGES_MAX))
+            page += 1
+        except (TimeoutException, NoSuchElementException):
+            print("      🏁 Fin de la paginación (no se detectó botón 'Siguiente').")
+            break 
         except Exception as e:
-            print(f"      ⚠️ Error during pagination: {e}")
+            print(f"      ❌ Error al intentar cambiar de página: {e}")
             break
 
     return collected_reviews
 
 
 def main():
-    # --- Resume Logic: Load already processed hotel URLs ---
+    # Lógica de Reanudación
     processed_urls = set()
     if os.path.isfile(FILE_REVIEWS):
         try:
             df = pd.read_csv(FILE_REVIEWS)
             processed_urls = set(df['hotel_url'].unique())
-            print(f"✅ Resume logic enabled. Found {len(processed_urls)} already processed hotels.")
+            print(f"✅ Lógica de reanudación activada. {len(processed_urls)} hoteles ya procesados.")
         except (pd.errors.EmptyDataError, KeyError):
-             print(f"⚠️ Reviews file '{FILE_REVIEWS}' is empty or invalid. Starting from scratch.")
+             print(f"⚠️ Archivo de reseñas vacío o inválido. Iniciando desde cero.")
              pass
-
 
     driver = initialize_driver()
     
@@ -218,14 +312,14 @@ def main():
         links = get_all_hotel_links(driver, SEARCH_URL)
         
         if not links:
-            print("🛑 No hotels found.")
+            print("🛑 No se encontraron hoteles.")
             return
 
         if HOTEL_VISIT_LIMIT > 0:
-            print(f"\n⚠️ TEST MODE: Processing only the first {HOTEL_VISIT_LIMIT} hotels.")
+            print(f"\n⚠️ MODO PRUEBA: Procesando solo los primeros {HOTEL_VISIT_LIMIT} hoteles.")
             links_to_process = links[:HOTEL_VISIT_LIMIT]
         else:
-            print(f"\n🚀 FULL MODE: Processing all {len(links)} found hotels.")
+            print(f"\n🚀 MODO COMPLETO: Procesando todos los {len(links)} hoteles encontrados.")
             links_to_process = links
 
         review_headers = ["hotel_name", "hotel_url", "title", "score", "positive", "negative", "date", "country"]
@@ -233,23 +327,23 @@ def main():
         
         for i, link in enumerate(links_to_process):
             if link in processed_urls:
-                print(f"⏭️ ({i+1}/{total}) Skipping already processed hotel: {link}")
+                print(f"⏭️ ({i+1}/{total}) Saltando hotel ya procesado: {link}")
                 continue
 
-            print(f"\n🏨 ({i+1}/{total}) Processing hotel: {link}")
+            print(f"\n🏨 ({i+1}/{total}) Procesando enlace: {link}")
             
             try:
                 reviews = extract_reviews_from_hotel(driver, link)
                 if reviews:
-                    print(f"   ✅ Extracted {len(reviews)} total reviews.")
+                    print(f"   ✅ Extraídas {len(reviews)} reseñas en total.")
                     save_to_csv_append(reviews, FILE_REVIEWS, review_headers)
                 else:
-                    print("   ℹ️ No reviews captured.")
+                    print("   ℹ️ No se capturaron reseñas.")
             except Exception as e:
-                print(f"   ❌ Critical error on this hotel: {e}")
+                print(f"   ❌ Error crítico en este hotel: {e}")
 
     finally:
-        print("\n🏁 Process finished. Closing browser.")
+        print("\n🏁 Proceso finalizado. Cerrando navegador.")
         driver.quit()
 
 if __name__ == "__main__":
