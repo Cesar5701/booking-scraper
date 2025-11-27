@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 # --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
 st.set_page_config(
@@ -14,8 +16,16 @@ INPUT_FILE = "reviews_with_sentiment.csv"
 
 def clean_booking_date(date_str):
     if not isinstance(date_str, str): return None
-    # Eliminar prefijos comunes de Booking en español e inglés
     clean = date_str.lower().replace("comentó el:", "").replace("reviewed:", "").strip()
+    # Mapeo de meses para asegurar que pandas entienda la fecha sin importar el idioma del sistema
+    month_map = {
+        'de enero de': ' january ', 'de febrero de': ' february ', 'de marzo de': ' march ',
+        'de abril de': ' april ', 'de mayo de': ' may ', 'de junio de': ' june ',
+        'de julio de': ' july ', 'de agosto de': ' august ', 'de septiembre de': ' september ',
+        'de octubre de': ' october ', 'de noviembre de': ' november ', 'de diciembre de': ' december '
+    }
+    for es, en in month_map.items():
+        clean = clean.replace(es, en)
     return clean
 
 @st.cache_data
@@ -27,13 +37,15 @@ def load_data():
         # --- LIMPIEZA DE FECHAS ---
         if 'date' in df.columns:
             df['date_clean'] = df['date'].apply(clean_booking_date)
-            # CORRECCIÓN 1: Usamos format='mixed' para silenciar el warning y mejorar la detección
-            df['date'] = pd.to_datetime(df['date_clean'], errors='coerce', format='mixed')
+            # El formato ahora es 'day month year' (ej: '24 november 2025'), especificamos el formato para optimizar.
+            df['date'] = pd.to_datetime(df['date_clean'], errors='coerce', format='%d %B %Y')
             df = df.dropna(subset=['date'])
 
         # --- LIMPIEZA DE PUNTAJES (8,5 -> 8.5) ---
         if 'score' in df.columns:
-            df['score'] = df['score'].astype(str).str.replace(',', '.', regex=False)
+            # CORRECCIÓN 4: Tomar solo la primera parte de la cadena antes de un salto de línea
+            df['score'] = df['score'].astype(str).str.split('\\n').str[0]
+            df['score'] = df['score'].str.replace(',', '.', regex=False)
             df['score'] = pd.to_numeric(df['score'], errors='coerce')
 
         # Calcular métrica compuesta
@@ -144,6 +156,32 @@ else:
         st.plotly_chart(fig_ts, width="stretch")
     else:
         st.warning("No hay suficientes datos de fecha para mostrar la evolución temporal.")
+
+    # --- NUBE DE PALABRAS ---
+    st.subheader("Nube de Palabras Clave en Reseñas")
+    
+    # Combinar todo el texto procesado en una sola cadena
+    # Se eliminan valores nulos y se asegura que todo sea string
+    text = " ".join(str(review) for review in df_filtered['full_review_processed'].dropna())
+
+    if text.strip():
+        wordcloud = WordCloud(
+            width=1200, 
+            height=600, 
+            background_color='white',
+            collocations=True, # Busca bigramas o frases comunes
+            max_words=150,
+            contour_width=3,
+            contour_color='steelblue'
+        ).generate(text)
+        
+        # Mostrar la imagen generada
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis("off")
+        st.pyplot(fig)
+    else:
+        st.warning("No hay suficientes datos de reseñas para generar una nube de palabras para la selección actual.")
 
     # --- DATOS CRUDOS ---
     with st.expander("Ver datos completos y reseñas"):

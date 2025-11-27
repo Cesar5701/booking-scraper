@@ -240,8 +240,15 @@ def extract_reviews_from_hotel(driver, hotel_url):
                 title = _get_safe_text(review, '[data-testid="review-title"], .c-review-block__title')
                 
                 # Score
-                score = _get_safe_text(review, '[data-testid="review-score"], .bui-review-score__badge')
-                score = score.replace("Score:", "").replace("Puntuación:", "").strip()
+                raw_score = _get_safe_text(review, '[data-testid="review-score"], .bui-review-score__badge')
+
+                # Limpiar el score: tomar solo la primera línea y reemplazar comas.
+                if '\n' in raw_score:
+                    score = raw_score.split('\n')[0]
+                else:
+                    score = raw_score
+                
+                score = score.replace("Score:", "").replace("Puntuación:", "").replace(",", ".").strip()
                 
                 # Texto Positivo/Negativo
                 pos = _get_safe_text(review, '[data-testid="review-positive-text"], .c-review__body--positive')
@@ -252,17 +259,14 @@ def extract_reviews_from_hotel(driver, hotel_url):
                     body = _get_safe_text(review, '.c-review-block__row')
                     if body: pos = body # Guardamos en pos temporalmente
 
-                # Fecha y País
+                # Fecha
                 date = _get_safe_text(review, '[data-testid="review-date"], .c-review-block__date')
-                country = _get_safe_text(review, '[data-testid="review-author-country"] .bui-avatar-block__subtitle') 
-                if not country:
-                     country = _get_safe_text(review, '.bui-avatar-block__subtitle')
 
                 data = {
                     "hotel_name": hotel_name, "hotel_url": hotel_url, 
                     "title": title, "score": score,
                     "positive": pos, "negative": neg, 
-                    "date": date, "country": country
+                    "date": date
                 }
                 
                 if data not in collected_reviews:
@@ -322,7 +326,7 @@ def main():
             print(f"\n🚀 MODO COMPLETO: Procesando todos los {len(links)} hoteles encontrados.")
             links_to_process = links
 
-        review_headers = ["hotel_name", "hotel_url", "title", "score", "positive", "negative", "date", "country"]
+        review_headers = ["hotel_name", "hotel_url", "title", "score", "positive", "negative", "date"]
         total = len(links_to_process)
         
         for i, link in enumerate(links_to_process):
