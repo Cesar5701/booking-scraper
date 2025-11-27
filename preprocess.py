@@ -2,9 +2,10 @@ import pandas as pd
 import re
 from langdetect import detect, LangDetectException
 
+import config
+
 # --- CONFIGURATION ---
-INPUT_FILE = "tlaxcala_hotel_reviews_full.csv"
-OUTPUT_FILE = "reviews_processed.csv"
+# Variables importadas de config.py
 
 def clean_text_basic(text):
     """
@@ -28,9 +29,9 @@ def detect_language_safe(text):
         return 'unknown'
 
 def main():
-    print(f"📄 Reading data from '{INPUT_FILE}'...")
+    print(f"📄 Reading data from '{config.RAW_REVIEWS_FILE}'...")
     try:
-        df = pd.read_csv(INPUT_FILE, on_bad_lines='skip')
+        df = pd.read_csv(config.RAW_REVIEWS_FILE, on_bad_lines='skip')
     except FileNotFoundError:
         print("❌ File not found.")
         return
@@ -60,8 +61,8 @@ def main():
     print(f"   - Español: {len(df_filtered[df_filtered['language']=='es'])}")
     print(f"   - Inglés:  {len(df_filtered[df_filtered['language']=='en'])}")
 
-    print(f"💾 Saving to '{OUTPUT_FILE}'...")
-    df_filtered.to_csv(OUTPUT_FILE, index=False, encoding='utf-8')
+    print(f"💾 Saving to '{config.PROCESSED_REVIEWS_FILE}'...")
+    df_filtered.to_csv(config.PROCESSED_REVIEWS_FILE, index=False, encoding='utf-8')
 
 if __name__ == "__main__":
     main()
