@@ -5,6 +5,8 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import re
 
+import config
+
 # --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
 st.set_page_config(
     page_title="Análisis de Sentimientos de Hoteles en Tlaxcala",
@@ -13,32 +15,33 @@ st.set_page_config(
 )
 
 # --- CARGA DE DATOS ---
-INPUT_FILE = "reviews_with_sentiment.csv"
+# Variables importadas de config.py
 
-MONTH_TRANSLATIONS = {
-    "enero": "January", "febrero": "February", "marzo": "March", "abril": "April",
-    "mayo": "May", "junio": "June", "julio": "July", "agosto": "August",
-    "septiembre": "September", "octubre": "October", "noviembre": "November", "diciembre": "December"
-}
+import dateparser
 
 def clean_booking_date(date_str):
-    if not isinstance(date_str, str): return None
+    if not isinstance(date_str, str) or not date_str.strip():
+        return None
+    
+    # Limpieza básica
     clean = date_str.lower().replace("comentó el:", "").replace("reviewed:", "").strip()
-    for es, en in MONTH_TRANSLATIONS.items():
-        if es in clean:
-            clean = clean.replace(es, en)
-            break
-    return clean
+    
+    # Intentar parsear con dateparser (soporta español e inglés automáticamente)
+    dt = dateparser.parse(clean, languages=['es', 'en'])
+    return dt
 
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv(INPUT_FILE)
+        df = pd.read_csv(config.SENTIMENT_REVIEWS_FILE)
         
         # 1. Fechas
+        # 1. Fechas
         if 'date' in df.columns:
-            df['date_clean'] = df['date'].apply(clean_booking_date)
-            df['date'] = pd.to_datetime(df['date_clean'], errors='coerce')
+            # clean_booking_date ahora devuelve datetime o None directamente
+            df['date'] = df['date'].apply(clean_booking_date)
+            
+            # Eliminar filas donde no se pudo parsear la fecha
             df = df.dropna(subset=['date'])
 
         # 2. Puntajes Duplicados
@@ -108,14 +111,14 @@ else:
                 fig_pie = px.pie(values=counts.values, names=counts.index, 
                                  color=counts.index, 
                                  color_discrete_map={'POS':'green', 'NEG':'red', 'NEU':'blue'})
-                st.plotly_chart(fig_pie, use_container_width=True)
+                st.plotly_chart(fig_pie, width="stretch")
             
             with col_b:
                 if selected_hotel == "Todos":
                     st.markdown("#### Ranking de Hoteles (Top 10)")
                     ranking = df.groupby('hotel_name')['compound_score'].mean().sort_values(ascending=False).head(10).reset_index()
                     fig_bar = px.bar(ranking, x='compound_score', y='hotel_name', orientation='h', color='compound_score', color_continuous_scale='RdYlGn')
-                    st.plotly_chart(fig_bar, use_container_width=True)
+                    st.plotly_chart(fig_bar, width="stretch")
                 else:
                     st.info("Selecciona 'Todos' para ver el ranking comparativo.")
 
@@ -141,6 +144,6 @@ else:
             df_ts = df_filtered.copy().set_index('date')
             monthly = df_ts.resample('ME')['compound_score'].mean().dropna()
             if not monthly.empty:
-                st.plotly_chart(px.line(monthly, title="Sentimiento a lo largo del tiempo"), use_container_width=True)
+                st.plotly_chart(px.line(monthly, title="Sentimiento a lo largo del tiempo"), width="stretch")
     else:
         st.warning("No hay reseñas para este filtro.")
