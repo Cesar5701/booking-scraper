@@ -95,7 +95,7 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
                 finally:
                     db.close()
 
-                logging.info(f"   💾 {len(batch)} reseñas procesadas ({saved_count} nuevas en DB).")
+                logging.info(f"   [SAVED] {len(batch)} reseñas procesadas ({saved_count} nuevas en DB).")
             except Exception as e:
                 logging.error(f"Error escribiendo datos: {e}")
             finally:
@@ -106,13 +106,13 @@ def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int):
     """
     Proceso de trabajador que maneja su propio driver y procesa una lista de URLs.
     """
-    logging.info(f"👷 Worker {worker_id}: Iniciando con {len(urls)} hoteles.")
+    logging.info(f"[WORKER] Worker {worker_id}: Iniciando con {len(urls)} hoteles.")
     driver = initialize_driver()
     
     processed_count = 0
     try:
         for url in urls:
-            logging.info(f"👷 Worker {worker_id}: Procesando {url}")
+            logging.info(f"[WORKER] Worker {worker_id}: Procesando {url}")
             try:
                 for batch in extract_reviews_from_hotel(driver, url):
                     if batch:
@@ -122,7 +122,7 @@ def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int):
             processed_count += 1
             
     finally:
-        logging.info(f"👋 Worker {worker_id}: Finalizando. Procesados: {processed_count}")
+        logging.info(f"[WORKER] Worker {worker_id}: Finalizando. Procesados: {processed_count}")
         driver.quit()
 
 
@@ -137,7 +137,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
     Returns:
         List[str]: Lista de URLs de los hoteles encontrados.
     """
-    print(f"🌍 Navegando a: {url}")
+    print(f"[INFO] Navegando a: {url}")
     driver.get(url)
 
     try:
@@ -145,10 +145,10 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
             EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="property-card"]'))
         )
     except TimeoutException:
-        print("❌ Los resultados iniciales no cargaron. Abortando.")
+        print("[ERROR] Los resultados iniciales no cargaron. Abortando.")
         return []
 
-    print("🔄 Cargando lista completa (Scroll + Botón 'Cargar más')...")
+    print("[INFO] Cargando lista completa (Scroll + Botón 'Cargar más')...")
     scroll_attempts = 0
     max_attempts = 3
     
@@ -166,7 +166,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Load more') or contains(., 'Cargar más')]"))
             )
             driver.execute_script("arguments[0].click();", load_more_btn)
-            print("   👉 Botón 'Cargar más' clickeado.")
+            print("   -> Botón 'Cargar más' clickeado.")
             
             # Esperar a que carguen más elementos (CRÍTICO: esperar cambio en conteo)
             WebDriverWait(driver, 10).until(
@@ -181,16 +181,16 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
             
             if new_height == last_height and new_cards == current_cards:
                 scroll_attempts += 1
-                logging.info(f"   ⏳ No se detectaron cambios. Intento {scroll_attempts}/{max_attempts}")
+                logging.info(f"   [WAIT] No se detectaron cambios. Intento {scroll_attempts}/{max_attempts}")
             else:
                 scroll_attempts = 0 # Se movió, seguimos intentando
     
-    print("\n🔍 Extrayendo enlaces finales...")
+    print("\n[INFO] Extrayendo enlaces finales...")
     # Intentar múltiples selectores para los enlaces
     elements = driver.find_elements(By.CSS_SELECTOR, 'a.e3859ef1a4, a[data-testid="title-link"], a[data-testid="property-card-desktop-single-image"], .c-property-card__title a')
     links = list(dict.fromkeys([e.get_attribute("href") for e in elements if e.get_attribute("href")]))
     
-    print(f"🔗 TOTAL HOTELES ENCONTRADOS: {len(links)}")
+    print(f"[INFO] TOTAL HOTELES ENCONTRADOS: {len(links)}")
     
     # Guardar respaldo de enlaces
     # Guardar respaldo de enlaces
@@ -272,6 +272,40 @@ def get_hotel_name_robust(driver: webdriver.Chrome) -> str:
         return "Nombre_Desconocido"
 
 
+def get_total_review_count(driver: webdriver.Chrome) -> int:
+    """
+    Intenta obtener el número total de reseñas desde la pestaña o encabezado.
+    """
+    try:
+        # Busca elementos que contengan números entre paréntesis, típico de Booking
+        # Ej: "Comentarios (123)" o "Guest reviews (123)"
+        elements = driver.find_elements(By.CSS_SELECTOR, '[data-testid="review-score-link"], .js-review-tab-link, [data-tab-target="htReviews"]')
+        
+        for elem in elements:
+            text = elem.text
+            # Extraer número entre paréntesis
+            import re
+            match = re.search(r'\((\d+[\.,]?\d*)\)', text)
+            if match:
+                num_str = match.group(1).replace('.', '').replace(',', '')
+                return int(num_str)
+                
+        # Fallback: Buscar en el sidebar o header de reviews
+        count_elem = driver.find_element(By.CSS_SELECTOR, '.bui-review-score__text, .d8eab2cf7f')
+        if count_elem:
+             text = count_elem.text
+             import re
+             match = re.search(r'(\d+[\.,]?\d*)', text)
+             if match:
+                num_str = match.group(1).replace('.', '').replace(',', '')
+                return int(num_str)
+
+    except Exception:
+        pass
+    
+    return 0
+
+
 def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Generator[List[Dict], None, None]:
     """
     Fase 2: Entrar al hotel, obtener nombre, abrir reseñas y paginar.
@@ -297,7 +331,12 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
 
     # 1. Obtener nombre robusto
     hotel_name = get_hotel_name_robust(driver)
-    print(f"   🏨 Procesando: {hotel_name}")
+    print(f"   [HOTEL] Procesando: {hotel_name}")
+    
+    # 1.5 Obtener conteo esperado (antes de abrir pestaña si es posible, o después)
+    expected_count = get_total_review_count(driver)
+    if expected_count > 0:
+        print(f"      [INFO] Se esperan aprox. {expected_count} reseñas.")
 
     # 2. Intentar cerrar popups de login/cookies
     try:
@@ -307,7 +346,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
     except Exception: pass
 
     # 3. ABRIR PESTAÑA DE RESEÑAS
-    print("      👉 Intentando abrir panel de reseñas...")
+    print("      -> Intentando abrir panel de reseñas...")
     reviews_opened = False
     
     # Lista de estrategias para abrir el panel
@@ -333,7 +372,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="review"], .c-review-block, .review_list_new_item_block'))
             )
             reviews_opened = True
-            print(f"      ✅ Panel abierto usando: {selector}")
+            print(f"      [OK] Panel abierto usando: {selector}")
             break
         except Exception:
             continue
@@ -345,18 +384,20 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
     # 4. EXTRACCIÓN Y PAGINACIÓN
     # collected_reviews = [] # YA NO ACUMULAMOS TODO
     page = 1
+    total_extracted = 0
     
     while True:
         # Esperar carga de reseñas en la página actual
         try:
-            review_elements = WebDriverWait(driver, 5).until(
+            # Aumentado timeout a 10s
+            review_elements = WebDriverWait(driver, 10).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[data-testid="review"], li.review_item, .c-review-block'))
             )
         except TimeoutException:
             logging.info("Tiempo de espera agotado buscando reseñas en esta página (posible fin).")
             break
 
-        print(f"      📄 Pág {page}: Encontrados {len(review_elements)} elementos.")
+        print(f"      [PAGE] Pág {page}: Encontrados {len(review_elements)} elementos.")
         
         page_reviews = [] # Acumulamos solo la página actual
         
@@ -403,12 +444,13 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
         
         # YIELD DE LA PÁGINA ACTUAL
         if page_reviews:
+            total_extracted += len(page_reviews)
             yield page_reviews
 
         # 5. IR A SIGUIENTE PÁGINA
         try:
             # Selector robusto para el botón "Siguiente"
-            next_btn = WebDriverWait(driver, 3).until(
+            next_btn = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="pagination-next-link"], button[aria-label="Next page"], button[aria-label="Página siguiente"]'))
             )
             
@@ -430,11 +472,18 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
             
             page += 1
         except (TimeoutException, NoSuchElementException):
-            print("      🏁 Fin de la paginación (no se detectó botón 'Siguiente' o no cargó siguiente página).")
+            print("      [END] Fin de la paginación (no se detectó botón 'Siguiente' o no cargó siguiente página).")
             break 
         except Exception as e:
             logging.error(f"Error al intentar cambiar de página: {e}")
             break
+            
+    # Verificación final
+    if expected_count > 0:
+        if total_extracted < expected_count * 0.8: # Si falta más del 20%
+             logging.warning(f"[WARN] {hotel_name}: Se esperaban {expected_count} reseñas, pero solo se extrajeron {total_extracted}.")
+        else:
+             print(f"      [DONE] Extracción completa: {total_extracted}/{expected_count}")
 
 
 def main():
@@ -454,9 +503,9 @@ def main():
         try:
             df = pd.read_csv(config.RAW_REVIEWS_FILE)
             processed_urls = set(df['hotel_url'].unique())
-            logging.info(f"✅ Lógica de reanudación activada. {len(processed_urls)} hoteles ya procesados.")
+            logging.info(f"[RESUME] Lógica de reanudación activada. {len(processed_urls)} hoteles ya procesados.")
         except (pd.errors.EmptyDataError, KeyError):
-             logging.warning(f"⚠️ Archivo de reseñas vacío o inválido. Iniciando desde cero.")
+             logging.warning(f"[WARN] Archivo de reseñas vacío o inválido. Iniciando desde cero.")
              pass
 
     # Fase 1: Obtener Links (Secuencial, un solo driver)
@@ -468,20 +517,20 @@ def main():
         driver.quit()
         
     if not links:
-        logging.error("🛑 No se encontraron hoteles.")
+        logging.error("[ERROR] No se encontraron hoteles.")
         return
 
     # Filtrar ya procesados
     links_to_process = [l for l in links if l not in processed_urls]
     
     if config.HOTEL_VISIT_LIMIT > 0:
-        logging.info(f"⚠️ MODO PRUEBA: Procesando solo los primeros {config.HOTEL_VISIT_LIMIT} hoteles.")
+        logging.info(f"[TEST MODE] Procesando solo los primeros {config.HOTEL_VISIT_LIMIT} hoteles.")
         links_to_process = links_to_process[:config.HOTEL_VISIT_LIMIT]
     else:
-        logging.info(f"🚀 MODO COMPLETO: Procesando {len(links_to_process)} hoteles pendientes.")
+        logging.info(f"[FULL MODE] Procesando {len(links_to_process)} hoteles pendientes.")
 
     if not links_to_process:
-        logging.info("🏁 No hay hoteles nuevos para procesar.")
+        logging.info("[INFO] No hay hoteles nuevos para procesar.")
         return
 
     # Fase 2: Procesamiento Paralelo
@@ -511,7 +560,7 @@ def main():
     result_queue.put(None)
     writer_thread.join()
 
-    logging.info("\n🏁 Proceso finalizado.")
+    logging.info("\n[DONE] Proceso finalizado.")
 
 if __name__ == "__main__":
     import math # Importar aquí o arriba

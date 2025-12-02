@@ -35,7 +35,7 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
     df['sentiment_score_neu'] = 0.0
 
     # --- PROCESAR INGLÉS ---
-    print("\n🇺🇸 Processing English reviews...")
+    print("\n[EN] Processing English reviews...")
     mask_en = df['language'] == 'en'
     df_en = df[mask_en]
     
@@ -50,7 +50,7 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
         df.loc[mask_en, 'sentiment_score_neu'] = [p.probas.get('NEU', 0) for p in preds_en]
 
     # --- PROCESAR ESPAÑOL Y OTROS (FALLBACK) ---
-    print("\n🇲🇽 Processing Spanish/Other reviews...")
+    print("\n[ES] Processing Spanish/Other reviews...")
     # Todo lo que no sea 'en' se procesa con el modelo en español
     # REFACTOR: Usamos explícitamente 'es' para evitar errores si se añaden más idiomas
     mask_es = df['language'] == 'es'
@@ -69,7 +69,7 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
     return df
 
 def main():
-    print(f"🚀 Connecting to Database: {config.DATABASE_URL}")
+    print(f"[INFO] Connecting to Database: {config.DATABASE_URL}")
     db = SessionLocal()
     
     try:
@@ -78,16 +78,16 @@ def main():
         reviews = db.query(Review).all()
         
         if not reviews:
-            print("❌ No reviews found in Database. Run scraper first.")
+            print("[ERROR] No reviews found in Database. Run scraper first.")
             return
 
-        print(f"📊 Found {len(reviews)} reviews in DB.")
+        print(f"[INFO] Found {len(reviews)} reviews in DB.")
         
         # Convertir a DataFrame para facilitar el manejo (aunque podríamos iterar objetos)
         # Usamos objetos para poder actualizar fácilmente
         
         # --- PREPROCESSING ---
-        print("🧹 Preprocessing and Detecting Language...")
+        print("[INFO] Preprocessing and Detecting Language...")
         valid_reviews = []
         
         for r in tqdm(reviews, desc="Preprocessing"):
@@ -106,11 +106,11 @@ def main():
                 valid_reviews.append(r)
         
         db.commit() # Guardar progreso de preprocesamiento
-        print(f"✅ Valid reviews for inference (ES/EN): {len(valid_reviews)}")
+        print(f"[INFO] Valid reviews for inference (ES/EN): {len(valid_reviews)}")
 
         # --- INFERENCE ---
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"🚀 Initializing analyzers on: {device}")
+        print(f"[INFO] Initializing analyzers on: {device}")
         
         analyzer_es = create_analyzer(task="sentiment", lang="es")
         analyzer_en = create_analyzer(task="sentiment", lang="en")
@@ -121,7 +121,7 @@ def main():
 
         # Procesar Español
         if reviews_es:
-            print(f"\n🇲🇽 Processing {len(reviews_es)} Spanish reviews...")
+            print(f"\n[ES] Processing {len(reviews_es)} Spanish reviews...")
             texts = [r.full_review_processed for r in reviews_es]
             preds = predict_in_batches(analyzer_es, texts, 'es')
             
@@ -133,7 +133,7 @@ def main():
 
         # Procesar Inglés
         if reviews_en:
-            print(f"\n🇺🇸 Processing {len(reviews_en)} English reviews...")
+            print(f"\n[EN] Processing {len(reviews_en)} English reviews...")
             texts = [r.full_review_processed for r in reviews_en]
             preds = predict_in_batches(analyzer_en, texts, 'en')
             
@@ -144,12 +144,12 @@ def main():
                 r.sentiment_score_neu = p.probas.get('NEU', 0.0)
 
         # --- SAVE ---
-        print("💾 Saving results to Database...")
+        print("[INFO] Saving results to Database...")
         db.commit()
-        print("🏁 Done! Database updated.")
+        print("[INFO] Done! Database updated.")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[ERROR] Error: {e}")
         db.rollback()
     finally:
         db.close()

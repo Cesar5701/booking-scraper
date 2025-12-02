@@ -1,0 +1,16 @@
+sqlalchemy
+pandas
+selenium
+webdriver-manager
+fake-useragent
+fasttext-wheel
+streamlit
+plotly
+matplotlib
+wordcloud
+dateparser
+pysentimiento
+torch
+tqdm
+python-dotenv
+pytest

@@ -24,7 +24,7 @@ import config
 # --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
 st.set_page_config(
     page_title="Análisis de Sentimientos de Hoteles en Tlaxcala",
-    page_icon="🏨",
+    page_icon=None,
     layout="wide"
 )
 
@@ -54,15 +54,15 @@ def load_data():
         conn.close()
         
         if df.empty:
-            st.warning("⚠️ La base de datos está vacía. Intentando cargar CSV de respaldo...")
+            st.warning("[WARN] La base de datos está vacía. Intentando cargar CSV de respaldo...")
             raise Exception("DB Empty")
             
     except Exception as e:
-        st.info(f"ℹ️ Cargando desde CSV (DB error: {e})...")
+        st.info(f"[INFO] Cargando desde CSV (DB error: {e})...")
         try:
             df = pd.read_csv(config.RAW_REVIEWS_FILE)
         except FileNotFoundError:
-            st.error("❌ No se encontraron datos (ni DB ni CSV). Ejecuta el scraper primero.")
+            st.error("[ERROR] No se encontraron datos (ni DB ni CSV). Ejecuta el scraper primero.")
             return pd.DataFrame()
 
     # Apply cleaning and feature engineering regardless of source
@@ -95,10 +95,10 @@ def load_data():
 df = load_data()
 
 # --- INTERFAZ ---
-st.title("🏨 Dashboard de Inteligencia de Negocios (Hoteles)")
+st.title("Dashboard de Inteligencia de Negocios (Hoteles)")
 
 if df is None or df.empty:
-    st.error("❌ No hay datos. Ejecuta el pipeline: scraper -> preprocess -> train.")
+    st.error("[ERROR] No hay datos. Ejecuta el pipeline: scraper -> preprocess -> train.")
 else:
     # FILTROS
     st.sidebar.header("Filtros")
@@ -123,7 +123,7 @@ else:
         c3.metric("Calificación Booking", f"{avg_score:.2f} / 10")
 
         # --- SECCIÓN VISUAL MEJORADA ---
-        st.subheader("📊 Análisis Visual")
+        st.subheader("Análisis Visual")
         
         # Pestañas para organizar mejor
         tab1, tab2, tab3 = st.tabs(["Sentimientos", "Nube de Palabras", "Tendencias"])
@@ -145,7 +145,7 @@ else:
                     )
                     st.plotly_chart(fig_pie, use_container_width=True)
                 else:
-                    st.info("ℹ️ Ejecuta 'src/inference.py' para ver el análisis de sentimientos.")
+                    st.info("[INFO] Ejecuta 'src/inference.py' para ver el análisis de sentimientos.")
             
             with col_b:
                 if selected_hotel == "Todos":
@@ -157,14 +157,14 @@ else:
                     st.info("Selecciona 'Todos' para ver el ranking comparativo.")
 
         with tab2:
-            st.markdown("#### ☁️ ¿De qué hablan los huéspedes?")
+            st.markdown("#### ¿De qué hablan los huéspedes?")
             
             # Crear dos columnas para mostrar las nubes lado a lado
             col_pos, col_neg = st.columns(2)
             
             # --- NUBE POSITIVA ---
             with col_pos:
-                st.info("👍 Lo que más gusta (Positivo)")
+                st.info("Lo que más gusta (Positivo)")
                 
                 text_pos = ""
                 if 'positive' in df_filtered.columns:
@@ -190,7 +190,7 @@ else:
 
             # --- NUBE NEGATIVA ---
             with col_neg:
-                st.error("👎 Puntos de dolor (Negativo)")
+                st.error("Puntos de dolor (Negativo)")
                 
                 text_neg = ""
                 if 'negative' in df_filtered.columns:
