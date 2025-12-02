@@ -49,7 +49,8 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
     # --- PROCESAR ESPAÑOL Y OTROS (FALLBACK) ---
     print("\n🇲🇽 Processing Spanish/Other reviews...")
     # Todo lo que no sea 'en' se procesa con el modelo en español
-    mask_es = df['language'] != 'en'
+    # REFACTOR: Usamos explícitamente 'es' para evitar errores si se añaden más idiomas
+    mask_es = df['language'] == 'es'
     df_es = df[mask_es]
     
     if not df_es.empty:

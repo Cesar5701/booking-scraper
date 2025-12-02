@@ -1,6 +1,8 @@
 import pandas as pd
 import re
 from langdetect import detect, LangDetectException
+# TODO: Considerar usar 'fasttext' (Facebook) para detección de idioma si el dataset crece.
+# langdetect es preciso pero lento para cientos de miles de registros.
 
 import config
 
