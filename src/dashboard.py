@@ -1,17 +1,23 @@
 import streamlit as st
+import sys
+import os
+
+# Asegurar que el directorio actual (src) esté en el path para imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 import pandas as pd
 import plotly.express as px
-from wordcloud import WordCloud, STOPWORDS
+from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import re
+import sqlite3
+from utils.cleaning import fix_score_value
 
-# Stopwords extendidas (Español + Inglés)
-STOPWORDS_ES = {
-    "de", "la", "que", "el", "en", "y", "a", "los", "se", "del", "las", "un", "por", "con", "no", "una", "su", "para", "es", "al", "lo", "como", "más", "pero", "sus", "le", "ya", "o", "este", "sí", "porque", "esta", "entre", "cuando", "muy", "sin", "sobre", "también", "me", "hasta", "hay", "donde", "quien", "desde", "todo", "nos", "durante", "todos", "uno", "les", "ni", "contra", "otros", "ese", "eso", "ante", "ellos", "e", "esto", "mí", "antes", "algunos", "qué", "unos", "yo", "otro", "otras", "otra", "él", "tanto", "esa", "estos", "mucho", "quienes", "nada", "muchos", "cual", "poco", "ella", "estar", "estas", "algunas", "algo", "nosotros", "mi", "mis", "tú", "te", "ti", "tu", "tus", "ellas", "nosotras", "vosotros", "vosotras", "os", "mío", "mía", "míos", "mías", "tuyo", "tuya", "tuyos", "tuyas", "suyo", "suya", "suyos", "suyas", "nuestro", "nuestra", "nuestros", "nuestras", "vuestro", "vuestra", "vuestros", "vuestras", "esos", "esas", "estoy", "estás", "está", "estamos", "estáis", "están", "esté", "estés", "estemos", "estéis", "estén", "estaré", "estarás", "estará", "estaremos", "estaréis", "estarán", "estaríais", "estaba", "estabas", "estábamos", "estabais", "estaban", "estuve", "estuviste", "estuvo", "estuvimos", "estuvisteis", "estuvieron", "hubiera", "hubieras", "hubiéramos", "hubierais", "hubieran", "hubiese", "hubieses", "hubiésemos", "hubieseis", "hubiesen", "habiendo", "habido", "habida", "habidos", "habidas", "soy", "eres", "es", "somos", "sois", "son", "sea", "seas", "seamos", "seáis", "sean", "seré", "serás", "será", "seremos", "seréis", "serán", "sería", "serías", "seríamos", "seríais", "serían", "era", "eras", "éramos", "erais", "eran", "fui", "fuiste", "fue", "fuimos", "fuisteis", "fueron", "fuera", "fueras", "fuéramos", "fuerais", "fueran", "fuese", "fueses", "fuésemos", "fueseis", "fuesen", "sintiendo", "sentido", "sentida", "sentidos", "sentidas", "siente", "sentid", "tengo", "tienes", "tiene", "tenemos", "tenéis", "tienen", "tenga", "tengas", "tengamos", "tengáis", "tengan", "tendré", "tendrás", "tendrá", "tendremos", "tendréis", "tendrán", "tendría", "tendrías", "tendríamos", "tendríais", "tendrían", "tenía", "tenías", "teníamos", "teníais", "tenían", "tuve", "tuviste", "tuvo", "tuvimos", "tuvisteis", "tuvieron", "tuviera", "tuvieras", "tuviéramos", "tuvierais", "tuvieran", "tuviese", "tuvieses", "tuviésemos", "tuvieseis", "tuviesen", "teniendo", "tenido", "tenida", "tenidos", "tenidas", "tened",
-    "hotel", "habitacion", "habitación", "lugar", "ubicación", "ubicacion", "desayuno", "personal", "atención", "atencion", "precio", "calidad", "noche", "días", "dias", "día", "dia" # Palabras muy comunes en contexto hotelero que pueden ser ruido si dominan demasiado
-}
+# Importar stopwords desde el módulo de utilidades
+from utils.stopwords import get_stopwords
 
-FINAL_STOPWORDS = STOPWORDS.union(STOPWORDS_ES)
+FINAL_STOPWORDS = get_stopwords()
 
 import config
 
@@ -40,10 +46,27 @@ def clean_booking_date(date_str):
 
 @st.cache_data
 def load_data():
+    df = pd.DataFrame() # Initialize df
     try:
-        df = pd.read_csv(config.SENTIMENT_REVIEWS_FILE)
+        # Intentar cargar desde DB
+        conn = sqlite3.connect(config.DATABASE_URL.replace("sqlite:///", ""))
+        df = pd.read_sql("SELECT * FROM reviews", conn)
+        conn.close()
         
-        # 1. Fechas
+        if df.empty:
+            st.warning("⚠️ La base de datos está vacía. Intentando cargar CSV de respaldo...")
+            raise Exception("DB Empty")
+            
+    except Exception as e:
+        st.info(f"ℹ️ Cargando desde CSV (DB error: {e})...")
+        try:
+            df = pd.read_csv(config.RAW_REVIEWS_FILE)
+        except FileNotFoundError:
+            st.error("❌ No se encontraron datos (ni DB ni CSV). Ejecuta el scraper primero.")
+            return pd.DataFrame()
+
+    # Apply cleaning and feature engineering regardless of source
+    if not df.empty:
         # 1. Fechas
         if 'date' in df.columns:
             # clean_booking_date ahora devuelve datetime o None directamente
@@ -54,26 +77,20 @@ def load_data():
 
         # 2. Puntajes Duplicados
         if 'score' in df.columns:
-            def fix_score_value(val):
-                if pd.isna(val): return None
-                s = str(val).replace(',', '.').strip()
-                match = re.search(r'(\d+(\.\d+)?)', s)
-                if match:
-                    try:
-                        num = float(match.group(1))
-                        if num > 10:
-                            if num == 1010: return 10.0
-                            if num > 10 and num < 100: return num / 10
-                        return num
-                    except: return None
-                return None
             df['score'] = df['score'].apply(fix_score_value)
 
         # 3. Métricas
-        df['compound_score'] = df['sentiment_score_pos'] - df['sentiment_score_neg']
-        return df
-    except FileNotFoundError:
-        return None
+        # 3. Métricas
+        if 'sentiment_score_pos' in df.columns and 'sentiment_score_neg' in df.columns:
+            df['compound_score'] = df['sentiment_score_pos'] - df['sentiment_score_neg']
+        else:
+            # Si no hay análisis de sentimiento, usar el score del usuario normalizado (-1 a 1) como proxy o 0
+            # Score es 0-10. (Score - 5) / 5 -> -1 a 1
+            if 'score' in df.columns:
+                 df['compound_score'] = (pd.to_numeric(df['score'], errors='coerce').fillna(5) - 5) / 5
+            else:
+                 df['compound_score'] = 0.0
+    return df
 
 df = load_data()
 
@@ -114,12 +131,21 @@ else:
         with tab1:
             col_a, col_b = st.columns(2)
             with col_a:
-                st.markdown("#### Distribución de Opiniones")
-                counts = df_filtered['sentiment_label'].value_counts()
-                fig_pie = px.pie(values=counts.values, names=counts.index, 
-                                 color=counts.index, 
-                                 color_discrete_map={'POS':'green', 'NEG':'red', 'NEU':'blue'})
-                st.plotly_chart(fig_pie, width="stretch")
+                # --- 2. Distribución de Sentimientos ---
+                if 'sentiment_label' in df_filtered.columns:
+                    st.markdown("#### Distribución de Sentimientos")
+                    counts = df_filtered['sentiment_label'].value_counts()
+                    
+                    fig_pie = px.pie(
+                        values=counts.values, 
+                        names=counts.index, 
+                        title="Proporción de Sentimientos",
+                        color=counts.index,
+                        color_discrete_map={'POS': '#28a745', 'NEU': '#ffc107', 'NEG': '#dc3545'}
+                    )
+                    st.plotly_chart(fig_pie, use_container_width=True)
+                else:
+                    st.info("ℹ️ Ejecuta 'src/inference.py' para ver el análisis de sentimientos.")
             
             with col_b:
                 if selected_hotel == "Todos":
@@ -139,48 +165,54 @@ else:
             # --- NUBE POSITIVA ---
             with col_pos:
                 st.info("👍 Lo que más gusta (Positivo)")
-                # Filtramos solo reseñas POS
-                df_pos = df_filtered[df_filtered['sentiment_label'] == 'POS']
                 
-                if not df_pos.empty:
-                    text_pos = " ".join(df_pos['title'].astype(str) + " " + df_pos['full_review_processed'].astype(str))
+                text_pos = ""
+                if 'positive' in df_filtered.columns:
+                     # Usar columna 'positive' directa del scraper
+                     text_pos = " ".join(df_filtered['positive'].dropna().astype(str))
+                elif 'sentiment_label' in df_filtered.columns:
+                     # Fallback a etiqueta de sentimiento
+                     df_pos = df_filtered[df_filtered['sentiment_label'] == 'POS']
+                     if not df_pos.empty:
+                        text_pos = " ".join(df_pos['title'].astype(str) + " " + df_pos['full_review_processed'].astype(str))
+                
+                if len(text_pos) > 10:
+                    # Usamos un mapa de color verde para lo positivo
+                    wc_pos = WordCloud(width=400, height=300, background_color='white', 
+                                     colormap='Greens', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_pos)
                     
-                    if len(text_pos) > 10:
-                        # Usamos un mapa de color verde para lo positivo
-                        wc_pos = WordCloud(width=400, height=300, background_color='white', 
-                                         colormap='Greens', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_pos)
-                        
-                        fig_pos, ax_pos = plt.subplots()
-                        ax_pos.imshow(wc_pos, interpolation='bilinear')
-                        ax_pos.axis("off")
-                        st.pyplot(fig_pos)
-                    else:
-                        st.warning("No hay suficiente texto positivo.")
+                    fig_pos, ax_pos = plt.subplots()
+                    ax_pos.imshow(wc_pos, interpolation='bilinear')
+                    ax_pos.axis("off")
+                    st.pyplot(fig_pos)
                 else:
-                    st.write("No se detectaron reseñas positivas.")
+                    st.write("No hay suficiente texto positivo.")
 
             # --- NUBE NEGATIVA ---
             with col_neg:
                 st.error("👎 Puntos de dolor (Negativo)")
-                # Filtramos solo reseñas NEG
-                df_neg = df_filtered[df_filtered['sentiment_label'] == 'NEG']
                 
-                if not df_neg.empty:
-                    text_neg = " ".join(df_neg['title'].astype(str) + " " + df_neg['full_review_processed'].astype(str))
+                text_neg = ""
+                if 'negative' in df_filtered.columns:
+                     # Usar columna 'negative' directa del scraper
+                     text_neg = " ".join(df_filtered['negative'].dropna().astype(str))
+                elif 'sentiment_label' in df_filtered.columns:
+                     # Fallback a etiqueta de sentimiento
+                     df_neg = df_filtered[df_filtered['sentiment_label'] == 'NEG']
+                     if not df_neg.empty:
+                        text_neg = " ".join(df_neg['title'].astype(str) + " " + df_neg['full_review_processed'].astype(str))
+
+                if len(text_neg) > 10:
+                    # Usamos un mapa de color rojo/fuego para lo negativo
+                    wc_neg = WordCloud(width=400, height=300, background_color='white', 
+                                     colormap='Reds', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_neg)
                     
-                    if len(text_neg) > 10:
-                        # Usamos un mapa de color rojo/fuego para lo negativo
-                        wc_neg = WordCloud(width=400, height=300, background_color='white', 
-                                         colormap='Reds', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_neg)
-                        
-                        fig_neg, ax_neg = plt.subplots()
-                        ax_neg.imshow(wc_neg, interpolation='bilinear')
-                        ax_neg.axis("off")
-                        st.pyplot(fig_neg)
-                    else:
-                        st.warning("No hay suficiente texto negativo.")
+                    fig_neg, ax_neg = plt.subplots()
+                    ax_neg.imshow(wc_neg, interpolation='bilinear')
+                    ax_neg.axis("off")
+                    st.pyplot(fig_neg)
                 else:
-                    st.write("¡Genial! No se detectaron reseñas negativas.")
+                    st.write("No hay suficiente texto negativo.")
         with tab3:
             st.markdown("#### Evolución Temporal")
             df_ts = df_filtered.copy().set_index('date')

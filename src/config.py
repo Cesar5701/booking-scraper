@@ -15,11 +15,13 @@ LINKS_FILE = os.path.join(DATA_DIR, "tlaxcala_hotel_links.csv")
 RAW_REVIEWS_FILE = os.path.join(DATA_DIR, "tlaxcala_hotel_reviews_full.csv")
 PROCESSED_REVIEWS_FILE = os.path.join(DATA_DIR, "reviews_processed.csv")
 SENTIMENT_REVIEWS_FILE = os.path.join(DATA_DIR, "reviews_with_sentiment.csv")
+DATABASE_URL = f"sqlite:///{os.path.join(DATA_DIR, 'reviews.db')}"
 
 # Scraper Settings
 HEADLESS_MODE = False
 MAX_WAIT_TIME = 10
 HOTEL_VISIT_LIMIT = 0  # 0 = Todos
+MAX_WORKERS = 8 # Número de navegadores simultáneos
 TIME_BETWEEN_PAGES_MIN = 2.0
 TIME_BETWEEN_PAGES_MAX = 3.5
 

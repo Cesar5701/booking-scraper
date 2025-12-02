@@ -1,33 +1,47 @@
 import pandas as pd
 import re
-from langdetect import detect, LangDetectException
-# TODO: Considerar usar 'fasttext' (Facebook) para detección de idioma si el dataset crece.
-# langdetect es preciso pero lento para cientos de miles de registros.
+import fasttext
+import os
+
+# Suprimir alertas de fasttext
+fasttext.FastText.eprint = lambda x: None
 
 import config
 
 # --- CONFIGURATION ---
 # Variables importadas de config.py
 
-def clean_text_basic(text):
-    """
-    Limpieza básica para Transformers.
-    No lematizamos para respetar la estructura de ambos idiomas.
-    """
-    if not isinstance(text, str):
-        return ""
-    # Convertir a minúsculas
-    text = text.lower()
-    # Eliminar espacios extra
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
+from utils.cleaning import clean_text_basic
+
+# Cargar modelo FastText (Singleton)
+MODEL_PATH = os.path.join(config.BASE_DIR, "lid.176.ftz")
+FT_MODEL = None
+
+def load_fasttext_model():
+    global FT_MODEL
+    if FT_MODEL is None:
+        if not os.path.exists(MODEL_PATH):
+            print("⬇️ Downloading FastText model (lid.176.ftz)...")
+            import urllib.request
+            url = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz"
+            urllib.request.urlretrieve(url, MODEL_PATH)
+        
+        print("🚀 Loading FastText model...")
+        FT_MODEL = fasttext.load_model(MODEL_PATH)
+    return FT_MODEL
 
 def detect_language_safe(text):
-    """Detecta si es 'es' (español), 'en' (inglés) u otro."""
+    """Detecta si es 'es' (español), 'en' (inglés) u otro usando FastText."""
+    if not text or len(text) < 3: return 'unknown'
+    
     try:
-        if len(text) < 3: return 'unknown'
-        return detect(text)
-    except LangDetectException:
+        model = load_fasttext_model()
+        # predict devuelve (('__label__es',), array([0.99]))
+        prediction = model.predict(text.replace("\n", " "))
+        label = prediction[0][0]
+        lang = label.replace("__label__", "")
+        return lang
+    except Exception:
         return 'unknown'
 
 def main():

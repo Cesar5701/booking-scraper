@@ -5,9 +5,12 @@ from tqdm import tqdm
 import numpy as np
 
 import config
+from core.database import SessionLocal, engine, Base
+from models import Review
+from preprocess import clean_text_basic, detect_language_safe
 
-# --- CONFIGURATION ---
-# Variables importadas de config.py
+# Crear tablas si no existen (útil si se borró la DB)
+Base.metadata.create_all(bind=engine)
 
 def predict_in_batches(analyzer, texts, lang_code, batch_size=config.BATCH_SIZE):
     """
@@ -66,30 +69,90 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
     return df
 
 def main():
-    print(f"📄 Reading data from '{config.PROCESSED_REVIEWS_FILE}'...")
+    print(f"🚀 Connecting to Database: {config.DATABASE_URL}")
+    db = SessionLocal()
+    
     try:
-        df = pd.read_csv(config.PROCESSED_REVIEWS_FILE)
-    except FileNotFoundError:
-        print(f"❌ File '{config.PROCESSED_REVIEWS_FILE}' not found.")
-        return
+        # 1. Leer reseñas de la DB que no tengan sentimiento calculado
+        # Opcional: Procesar todas. Por ahora, procesamos todas.
+        reviews = db.query(Review).all()
+        
+        if not reviews:
+            print("❌ No reviews found in Database. Run scraper first.")
+            return
 
-    # --- Model Initialization ---
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"🚀 Initializing analyzers on: {device}")
-    
-    # CARGAMOS LOS DOS MODELOS
-    print("   1. Loading Spanish Analyzer (RoBERTuito)...")
-    analyzer_es = create_analyzer(task="sentiment", lang="es")
-    
-    print("   2. Loading English Analyzer (RoBERTa)...")
-    analyzer_en = create_analyzer(task="sentiment", lang="en")
+        print(f"📊 Found {len(reviews)} reviews in DB.")
+        
+        # Convertir a DataFrame para facilitar el manejo (aunque podríamos iterar objetos)
+        # Usamos objetos para poder actualizar fácilmente
+        
+        # --- PREPROCESSING ---
+        print("🧹 Preprocessing and Detecting Language...")
+        valid_reviews = []
+        
+        for r in tqdm(reviews, desc="Preprocessing"):
+            # Combinar título y cuerpo
+            full_text = f"{r.title or ''} {r.positive or ''} {r.negative or ''}".strip()
+            
+            # Limpieza
+            processed = clean_text_basic(full_text)
+            r.full_review_processed = processed
+            
+            # Idioma
+            lang = detect_language_safe(processed)
+            r.language = lang
+            
+            if lang in ['es', 'en']:
+                valid_reviews.append(r)
+        
+        db.commit() # Guardar progreso de preprocesamiento
+        print(f"✅ Valid reviews for inference (ES/EN): {len(valid_reviews)}")
 
-    # --- Sentiment Analysis ---
-    df_result = predict_sentiment_multilingual(df, analyzer_es, analyzer_en)
+        # --- INFERENCE ---
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"🚀 Initializing analyzers on: {device}")
+        
+        analyzer_es = create_analyzer(task="sentiment", lang="es")
+        analyzer_en = create_analyzer(task="sentiment", lang="en")
 
-    print(f"💾 Saving final data to '{config.SENTIMENT_REVIEWS_FILE}'...")
-    df_result.to_csv(config.SENTIMENT_REVIEWS_FILE, index=False, encoding='utf-8')
-    print("🏁 Done!")
+        # Separar por idioma
+        reviews_es = [r for r in valid_reviews if r.language == 'es']
+        reviews_en = [r for r in valid_reviews if r.language == 'en']
+
+        # Procesar Español
+        if reviews_es:
+            print(f"\n🇲🇽 Processing {len(reviews_es)} Spanish reviews...")
+            texts = [r.full_review_processed for r in reviews_es]
+            preds = predict_in_batches(analyzer_es, texts, 'es')
+            
+            for r, p in zip(reviews_es, preds):
+                r.sentiment_label = p.output
+                r.sentiment_score_pos = p.probas.get('POS', 0.0)
+                r.sentiment_score_neg = p.probas.get('NEG', 0.0)
+                r.sentiment_score_neu = p.probas.get('NEU', 0.0)
+
+        # Procesar Inglés
+        if reviews_en:
+            print(f"\n🇺🇸 Processing {len(reviews_en)} English reviews...")
+            texts = [r.full_review_processed for r in reviews_en]
+            preds = predict_in_batches(analyzer_en, texts, 'en')
+            
+            for r, p in zip(reviews_en, preds):
+                r.sentiment_label = p.output
+                r.sentiment_score_pos = p.probas.get('POS', 0.0)
+                r.sentiment_score_neg = p.probas.get('NEG', 0.0)
+                r.sentiment_score_neu = p.probas.get('NEU', 0.0)
+
+        # --- SAVE ---
+        print("💾 Saving results to Database...")
+        db.commit()
+        print("🏁 Done! Database updated.")
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     main()
