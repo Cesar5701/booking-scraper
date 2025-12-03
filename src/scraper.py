@@ -19,12 +19,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 import hashlib
+import math
 from sqlalchemy.exc import IntegrityError
 
 import config
 from core.driver import initialize_driver
 from core.database import SessionLocal, engine, Base
 from models import Review
+from booking_selectors import SearchResults, HotelPage, Reviews
 
 # Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
@@ -142,7 +144,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
 
     try:
         WebDriverWait(driver, config.MAX_WAIT_TIME).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="property-card"]'))
+            EC.presence_of_element_located(SearchResults.PROPERTY_CARD)
         )
     except TimeoutException:
         print("[ERROR] Los resultados iniciales no cargaron. Abortando.")
@@ -154,7 +156,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
     
     while scroll_attempts < max_attempts:
         # Guardar número actual de elementos para comparar
-        current_cards = len(driver.find_elements(By.CSS_SELECTOR, '[data-testid="property-card"]'))
+        current_cards = len(driver.find_elements(*SearchResults.PROPERTY_CARD))
         
         last_height = driver.execute_script("return document.body.scrollHeight")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -163,21 +165,21 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
             # Esperar a que aparezca el botón o que cambie la altura/elementos
             # Selector bilingüe para el botón de cargar más
             load_more_btn = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Load more') or contains(., 'Cargar más')]"))
+                EC.element_to_be_clickable(SearchResults.LOAD_MORE_BUTTON)
             )
             driver.execute_script("arguments[0].click();", load_more_btn)
             print("   -> Botón 'Cargar más' clickeado.")
             
             # Esperar a que carguen más elementos (CRÍTICO: esperar cambio en conteo)
             WebDriverWait(driver, 10).until(
-                lambda d: len(d.find_elements(By.CSS_SELECTOR, '[data-testid="property-card"]')) > current_cards
+                lambda d: len(d.find_elements(*SearchResults.PROPERTY_CARD)) > current_cards
             )
             scroll_attempts = 0
         except TimeoutException:
             # Si no aparece botón, tal vez solo es scroll infinito o ya no hay más
             new_height = driver.execute_script("return document.body.scrollHeight")
             # Verificamos si la altura cambió O si hay más elementos
-            new_cards = len(driver.find_elements(By.CSS_SELECTOR, '[data-testid="property-card"]'))
+            new_cards = len(driver.find_elements(*SearchResults.PROPERTY_CARD))
             
             if new_height == last_height and new_cards == current_cards:
                 scroll_attempts += 1
@@ -187,7 +189,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
     
     print("\n[INFO] Extrayendo enlaces finales...")
     # Intentar múltiples selectores para los enlaces
-    elements = driver.find_elements(By.CSS_SELECTOR, 'a.e3859ef1a4, a[data-testid="title-link"], a[data-testid="property-card-desktop-single-image"], .c-property-card__title a')
+    elements = driver.find_elements(By.CSS_SELECTOR, SearchResults.HOTEL_LINKS)
     links = list(dict.fromkeys([e.get_attribute("href") for e in elements if e.get_attribute("href")]))
     
     print(f"[INFO] TOTAL HOTELES ENCONTRADOS: {len(links)}")
@@ -232,7 +234,7 @@ def get_hotel_name_robust(driver: webdriver.Chrome) -> str:
     """
     # ESTRATEGIA 1: JSON-LD (Datos Estructurados - Muy Estable)
     try:
-        scripts = driver.find_elements(By.XPATH, "//script[@type='application/ld+json']")
+        scripts = driver.find_elements(*HotelPage.NAME_JSON_LD)
         for script in scripts:
             content = script.get_attribute("innerHTML")
             if "Hotel" in content or "LodgingBusiness" in content:
@@ -247,20 +249,20 @@ def get_hotel_name_robust(driver: webdriver.Chrome) -> str:
 
     # ESTRATEGIA 2: Meta Tags OpenGraph
     try:
-        og_title = driver.find_element(By.CSS_SELECTOR, 'meta[property="og:title"]').get_attribute("content")
+        og_title = driver.find_element(*HotelPage.NAME_OG_TITLE).get_attribute("content")
         if og_title: return og_title.split(",")[0].strip()
     except Exception: 
         pass
 
     # ESTRATEGIA 3: ID Clásico
     try:
-        id_name = driver.find_element(By.ID, "hp_hotel_name").text.strip()
+        id_name = driver.find_element(*HotelPage.NAME_ID).text.strip()
         if id_name: return id_name
     except Exception: 
         pass
 
     # ESTRATEGIA 4: Selectores Visuales (Fallback)
-    visual_selectors = ['h2.pp-header__title', 'h2[data-testid="post-booking-header-title"]', '.hp__hotel-name']
+    visual_selectors = HotelPage.NAME_VISUAL_SELECTORS
     for sel in visual_selectors:
         txt = _get_safe_text(driver, sel)
         if txt: return txt
@@ -279,7 +281,7 @@ def get_total_review_count(driver: webdriver.Chrome) -> int:
     try:
         # Busca elementos que contengan números entre paréntesis, típico de Booking
         # Ej: "Comentarios (123)" o "Guest reviews (123)"
-        elements = driver.find_elements(By.CSS_SELECTOR, '[data-testid="review-score-link"], .js-review-tab-link, [data-tab-target="htReviews"]')
+        elements = driver.find_elements(By.CSS_SELECTOR, HotelPage.REVIEW_COUNT_LINKS)
         
         for elem in elements:
             text = elem.text
@@ -291,7 +293,7 @@ def get_total_review_count(driver: webdriver.Chrome) -> int:
                 return int(num_str)
                 
         # Fallback: Buscar en el sidebar o header de reviews
-        count_elem = driver.find_element(By.CSS_SELECTOR, '.bui-review-score__text, .d8eab2cf7f')
+        count_elem = driver.find_element(By.CSS_SELECTOR, HotelPage.REVIEW_COUNT_SIDEBAR)
         if count_elem:
              text = count_elem.text
              import re
@@ -341,7 +343,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
     # 2. Intentar cerrar popups de login/cookies
     try:
         WebDriverWait(driver, 3).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[aria-label*="Dismiss"], button[aria-label*="Ignorar"], button[aria-label*="Cerrar"]'))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, HotelPage.LOGIN_POPUP_CLOSE))
         ).click()
     except Exception: pass
 
@@ -351,17 +353,8 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
     
     # Lista de estrategias para abrir el panel
     # Lista de estrategias para abrir el panel
-    open_strategies = [
-        (By.CSS_SELECTOR, '[data-testid="review-score-link"]'),
-        (By.CSS_SELECTOR, '[data-testid="review-score-component"]'),
-        (By.CSS_SELECTOR, '.js-review-tab-link'),
-        (By.CSS_SELECTOR, '[data-tab-target="htReviews"]'),
-        (By.ID, "show_reviews_tab"),
-        (By.CSS_SELECTOR, '[data-testid="guest-reviews-tab-trigger"]'),
-        (By.PARTIAL_LINK_TEXT, "Comentarios"),
-        (By.PARTIAL_LINK_TEXT, "Reviews"),
-        (By.XPATH, "//a[contains(@href, '#tab-reviews')]")
-    ]
+    # Lista de estrategias para abrir el panel
+    open_strategies = HotelPage.OPEN_REVIEWS_STRATEGIES
     
     for by, selector in open_strategies:
         try:
@@ -369,7 +362,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
             driver.execute_script("arguments[0].click();", elem)
             # Esperar a que aparezca AL MENOS UNA reseña o el contenedor de lista
             WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="review"], .c-review-block, .review_list_new_item_block'))
+                EC.presence_of_element_located((By.CSS_SELECTOR, Reviews.ITEM))
             )
             reviews_opened = True
             print(f"      [OK] Panel abierto usando: {selector}")
@@ -391,7 +384,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
         try:
             # Aumentado timeout a 10s
             review_elements = WebDriverWait(driver, 10).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, '[data-testid="review"], li.review_item, .c-review-block'))
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, Reviews.ITEM))
             )
         except TimeoutException:
             logging.info("Tiempo de espera agotado buscando reseñas en esta página (posible fin).")
@@ -404,10 +397,10 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
         for review in review_elements:
             try:
                 # Extracción con selectores múltiples (fallback)
-                title = _get_safe_text(review, '[data-testid="review-title"], .c-review-block__title')
+                title = _get_safe_text(review, Reviews.TITLE)
                 
                 # Score
-                raw_score = _get_safe_text(review, '[data-testid="review-score"], .bui-review-score__badge')
+                raw_score = _get_safe_text(review, Reviews.SCORE)
 
                 # Limpiar el score: tomar solo la primera línea y reemplazar comas.
                 if '\n' in raw_score:
@@ -418,16 +411,16 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
                 score = score.replace("Score:", "").replace("Puntuación:", "").replace(",", ".").strip()
                 
                 # Texto Positivo/Negativo
-                pos = _get_safe_text(review, '[data-testid="review-positive-text"], .c-review__body--positive')
-                neg = _get_safe_text(review, '[data-testid="review-negative-text"], .c-review__body--negative')
+                pos = _get_safe_text(review, Reviews.POSITIVE)
+                neg = _get_safe_text(review, Reviews.NEGATIVE)
                 
                 # Si no hay pos/neg separados, intentar buscar cuerpo general (raro en Booking, pero posible)
                 if not pos and not neg:
-                    body = _get_safe_text(review, '.c-review-block__row')
+                    body = _get_safe_text(review, Reviews.BODY_FALLBACK)
                     if body: pos = body # Guardamos en pos temporalmente
 
                 # Fecha
-                date = _get_safe_text(review, '[data-testid="review-date"], .c-review-block__date')
+                date = _get_safe_text(review, Reviews.DATE)
 
                 data = {
                     "hotel_name": hotel_name, "hotel_url": hotel_url, 
@@ -451,7 +444,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
         try:
             # Selector robusto para el botón "Siguiente"
             next_btn = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="pagination-next-link"], button[aria-label="Next page"], button[aria-label="Página siguiente"]'))
+                EC.element_to_be_clickable((By.CSS_SELECTOR, Reviews.NEXT_PAGE))
             )
             
             # Capturar el primer elemento de reseña actual para detectar cuando cambie la página (stale)
@@ -467,7 +460,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
             
             # Esperar a que aparezcan las nuevas reseñas
             WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="review"], li.review_item, .c-review-block'))
+                EC.presence_of_element_located((By.CSS_SELECTOR, Reviews.ITEM))
             )
             
             page += 1
