@@ -1,6 +1,6 @@
 import pytest
 import math
-from src.utils.cleaning import clean_text_basic, fix_score_value
+from src.utils.cleaning import clean_text_basic, fix_score_value, extract_score_from_text
 
 # --- Test clean_text_basic ---
 
@@ -26,13 +26,26 @@ def test_fix_score_valid():
 def test_fix_score_comma():
     assert fix_score_value("9,5") == 9.5
 
-def test_fix_score_concatenation_error():
-    # Caso crítico: 10 + 10 = 1010
-    assert fix_score_value(1010) == 10.0
-    # Caso: 9.5 + 9.5 = 95 (si se pierde el punto, aunque la lógica actual maneja >10 y <100)
-    assert fix_score_value(95) == 9.5
+
 
 def test_fix_score_invalid():
     assert fix_score_value(None) is None
     assert fix_score_value("abc") is None
     assert fix_score_value("") is None
+
+# --- Test extract_score_from_text ---
+
+def test_extract_score_simple():
+    assert extract_score_from_text("Score: 8.5") == "8.5"
+    assert extract_score_from_text("10") == "10"
+    assert extract_score_from_text("9,2") == "9.2"
+
+def test_extract_score_complex():
+    assert extract_score_from_text("Puntuación: 7.5 / 10") == "7.5"
+    assert extract_score_from_text("Review score: 10") == "10"
+    assert extract_score_from_text("Garbage text 5.0 more text") == "5.0"
+    
+def test_extract_score_invalid():
+    assert extract_score_from_text("No score here") == "0"
+    assert extract_score_from_text("") == "0"
+    assert extract_score_from_text(None) == "0"

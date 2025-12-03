@@ -14,7 +14,7 @@ import config
 from core.driver import initialize_driver
 from core.database import engine, Base
 from core.pipeline import run_pipeline
-from booking_selectors import SearchResults
+from pages.search_page import SearchPage
 
 # Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
@@ -25,77 +25,15 @@ Base.metadata.create_all(bind=engine)
 
 def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
     """
-    Fase 1: Obtener enlaces de todos los hoteles en la búsqueda.
-    
-    Args:
-        driver: Instancia de Selenium WebDriver.
-        url: URL de búsqueda de Booking.
-        
-    Returns:
-        List[str]: Lista de URLs de los hoteles encontrados.
+    Fase 1: Obtener enlaces de todos los hoteles en la búsqueda usando POM.
     """
-    logging.info(f"Navegando a: {url}")
-    driver.get(url)
-
-    try:
-        WebDriverWait(driver, config.MAX_WAIT_TIME).until(
-            EC.presence_of_element_located(SearchResults.PROPERTY_CARD)
-        )
-    except TimeoutException:
-        logging.error("Los resultados iniciales no cargaron. Abortando.")
+    search_page = SearchPage(driver)
+    
+    if not search_page.load_results(url):
         return []
 
-    logging.info("Cargando lista completa (Scroll + Botón 'Cargar más')...")
-    scroll_attempts = 0
-    max_attempts = 3
-    
-    while scroll_attempts < max_attempts:
-        # Guardar número actual de elementos para comparar
-        current_cards = len(driver.find_elements(*SearchResults.PROPERTY_CARD))
-        
-        last_height = driver.execute_script("return document.body.scrollHeight")
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        
-        try:
-            # Esperar a que aparezca el botón o que cambie la altura/elementos
-            # Selector bilingüe para el botón de cargar más
-            load_more_btn = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable(SearchResults.LOAD_MORE_BUTTON)
-            )
-            driver.execute_script("arguments[0].click();", load_more_btn)
-            logging.info("   -> Botón 'Cargar más' clickeado.")
-            
-            # Esperar a que carguen más elementos (CRÍTICO: esperar cambio en conteo)
-            WebDriverWait(driver, 10).until(
-                lambda d: len(d.find_elements(*SearchResults.PROPERTY_CARD)) > current_cards
-            )
-            scroll_attempts = 0
-        except TimeoutException:
-            # Si no aparece botón, tal vez solo es scroll infinito o ya no hay más
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            # Verificamos si la altura cambió O si hay más elementos
-            new_cards = len(driver.find_elements(*SearchResults.PROPERTY_CARD))
-            
-            if new_height == last_height and new_cards == current_cards:
-                scroll_attempts += 1
-                logging.info(f"   [WAIT] No se detectaron cambios. Intento {scroll_attempts}/{max_attempts}")
-            else:
-                scroll_attempts = 0 # Se movió, seguimos intentando
-    
-    logging.info("Extrayendo enlaces finales...")
-    # Intentar múltiples selectores para los enlaces
-    elements = driver.find_elements(By.CSS_SELECTOR, SearchResults.HOTEL_LINKS)
-    links = list(dict.fromkeys([e.get_attribute("href") for e in elements if e.get_attribute("href")]))
-    
-    logging.info(f"TOTAL HOTELES ENCONTRADOS: {len(links)}")
-    
-    # Guardar respaldo de enlaces
-    with open(config.LINKS_FILE, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["hotel_link"])
-        for l in links: writer.writerow([l])
-        
-    return links
+    search_page.scroll_and_load_all()
+    return search_page.get_hotel_links()
 
 def main():
     # Configurar Logging

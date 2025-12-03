@@ -12,7 +12,7 @@ import config
 from core.driver import initialize_driver
 from core.database import SessionLocal
 from models import Review
-from core.extractor import ReviewExtractor
+from pages.hotel_page import HotelPage
 
 def csv_writer_listener(result_queue: queue.Queue, filename: str):
     """
@@ -87,16 +87,32 @@ def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -
     """
     logging.info(f"[WORKER] Worker {worker_id}: Iniciando con {len(urls)} hoteles.")
     driver = initialize_driver()
-    extractor = ReviewExtractor(driver)
+    hotel_page = HotelPage(driver)
     
     processed_count = 0
     try:
         for url in urls:
             logging.info(f"[WORKER] Worker {worker_id}: Procesando {url}")
             try:
-                for batch in extractor.extract_reviews(url):
+                hotel_page.navigate(url)
+                hotel_name = hotel_page.get_name()
+                logging.info(f"   [HOTEL] Procesando: {hotel_name}")
+                
+                reviews_modal = hotel_page.open_reviews_modal()
+                if not reviews_modal:
+                    continue
+                    
+                page = 1
+                while True:
+                    batch = reviews_modal.extract_current_page()
                     if batch:
+                        logging.info(f"      [PAGE] Pág {page}: Encontrados {len(batch)} elementos.")
                         result_queue.put(batch)
+                    
+                    if not reviews_modal.next_page():
+                        break
+                    page += 1
+                    
             except Exception as e:
                 logging.error(f"Worker {worker_id} error en {url}: {e}", exc_info=True)
             processed_count += 1

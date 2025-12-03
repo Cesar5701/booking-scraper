@@ -1587,3 +1587,205 @@ Stacktrace:
 2025-12-02 22:03:43,796 - INFO - [WORKER] Worker 1: Finalizando. Procesados: 1
 2025-12-02 22:03:43,855 - INFO - 
 [DONE] Proceso finalizado.
+2025-12-02 22:13:02,384 - INFO - [RESUME] Lógica de reanudación activada. 189 hoteles ya procesados.
+2025-12-02 22:13:02,384 - INFO - --- FASE 1: BÚSQUEDA DE HOTELES ---
+2025-12-02 22:13:02,384 - INFO - 🚀 Iniciando WebDriver (Core)...
+2025-12-02 22:13:02,416 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0
+2025-12-02 22:13:02,416 - INFO - ====== WebDriver manager ======
+2025-12-02 22:13:02,483 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 22:13:02,627 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 22:13:02,758 - INFO - Driver [/home/cesar/.wdm/drivers/chromedriver/linux64/142.0.7444.175/chromedriver-linux64/chromedriver] found in cache
+2025-12-02 22:13:04,401 - INFO - Navegando a: https://www.booking.com/searchresults.html?ss=Tlaxcala%2C+Tlaxcala%2C+M%C3%A9xico&lang=es
+2025-12-02 22:13:07,775 - INFO - Cargando lista completa (Scroll + Botón 'Cargar más')...
+2025-12-02 22:13:14,604 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 22:13:15,711 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 22:13:17,011 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 22:13:18,340 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 22:13:19,991 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 22:13:21,685 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 22:13:32,166 - INFO -    [WAIT] No se detectaron cambios. Intento 1/3
+2025-12-02 22:13:37,363 - INFO -    [WAIT] No se detectaron cambios. Intento 2/3
+2025-12-02 22:13:42,567 - INFO -    [WAIT] No se detectaron cambios. Intento 3/3
+2025-12-02 22:13:42,567 - INFO - Extrayendo enlaces finales...
+2025-12-02 22:13:43,401 - INFO - TOTAL HOTELES ENCONTRADOS: 216
+2025-12-02 22:13:43,460 - INFO - [TEST MODE] Procesando solo los primeros 1 hoteles.
+2025-12-02 22:13:43,460 - INFO - --- FASE 2: EXTRACCIÓN PARALELA (1 Workers) ---
+2025-12-02 22:13:43,461 - INFO - [WORKER] Worker 1: Iniciando con 1 hoteles.
+2025-12-02 22:13:43,461 - INFO - 🚀 Iniciando WebDriver (Core)...
+2025-12-02 22:13:43,490 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0
+2025-12-02 22:13:43,490 - INFO - ====== WebDriver manager ======
+2025-12-02 22:13:43,554 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 22:13:43,680 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 22:13:43,806 - INFO - Driver [/home/cesar/.wdm/drivers/chromedriver/linux64/142.0.7444.175/chromedriver-linux64/chromedriver] found in cache
+2025-12-02 22:13:44,981 - INFO - [WORKER] Worker 1: Procesando https://www.booking.com/hotel/mx/mision-san-francisco.es.html?aid=304142&label=gen173nr-10CAQoggJCInNlYXJjaF90bGF4Y2FsYSwgdGxheGNhbGEsIG3DqXhpY29IClgEaKABiAEBmAEzuAEXyAEM2AED6AEB-AEBiAIBqAIBuALR8b7JBsACAdICJDQ5ZWJlMTk2LTk0ZjUtNDkzMy05YThjLTI0MThhMTMxZDMwZtgCAeACAQ&ucfs=1&arphpl=1&group_adults=2&req_adults=2&no_rooms=1&group_children=0&req_children=0&hpos=1&hapos=1&sr_order=popularity&srpvid=94d21da803250983&srepoch=1764735202&from=searchresults
+2025-12-02 22:13:48,879 - INFO -    [HOTEL] Procesando: Hotel San Francisco Tlaxcala, Tlaxcala de Xicohténcatl (precios actualizados 2025)
+2025-12-02 22:13:49,816 - INFO -       -> Intentando abrir panel de reseñas...
+2025-12-02 22:13:52,429 - INFO -       [OK] Panel abierto usando: [data-testid="review-score-component"]
+2025-12-02 22:13:52,894 - INFO -       [PAGE] Pág 1: Encontrados 10 elementos.
+2025-12-02 22:13:52,924 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:13:54,009 - INFO -       [PAGE] Pág 2: Encontrados 10 elementos.
+2025-12-02 22:13:54,027 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:13:55,017 - INFO -       [PAGE] Pág 3: Encontrados 10 elementos.
+2025-12-02 22:13:55,041 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:13:56,265 - INFO -       [PAGE] Pág 4: Encontrados 9 elementos.
+2025-12-02 22:13:56,287 - INFO -    [SAVED] 9 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:13:57,463 - INFO -       [PAGE] Pág 5: Encontrados 10 elementos.
+2025-12-02 22:13:57,486 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:13:58,547 - INFO -       [PAGE] Pág 6: Encontrados 10 elementos.
+2025-12-02 22:13:58,571 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:13:59,576 - INFO -       [PAGE] Pág 7: Encontrados 10 elementos.
+2025-12-02 22:13:59,600 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:00,579 - INFO -       [PAGE] Pág 8: Encontrados 10 elementos.
+2025-12-02 22:14:00,599 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:01,557 - INFO -       [PAGE] Pág 9: Encontrados 10 elementos.
+2025-12-02 22:14:01,580 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:03,081 - INFO -       [PAGE] Pág 10: Encontrados 10 elementos.
+2025-12-02 22:14:03,105 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:04,100 - INFO -       [PAGE] Pág 11: Encontrados 10 elementos.
+2025-12-02 22:14:04,125 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:05,132 - INFO -       [PAGE] Pág 12: Encontrados 10 elementos.
+2025-12-02 22:14:05,160 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:06,161 - INFO -       [PAGE] Pág 13: Encontrados 10 elementos.
+2025-12-02 22:14:06,185 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:07,131 - INFO -       [PAGE] Pág 14: Encontrados 10 elementos.
+2025-12-02 22:14:07,155 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:08,068 - INFO -       [PAGE] Pág 15: Encontrados 10 elementos.
+2025-12-02 22:14:08,092 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:09,032 - INFO -       [PAGE] Pág 16: Encontrados 10 elementos.
+2025-12-02 22:14:09,055 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:10,031 - INFO -       [PAGE] Pág 17: Encontrados 10 elementos.
+2025-12-02 22:14:10,055 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:10,995 - INFO -       [PAGE] Pág 18: Encontrados 10 elementos.
+2025-12-02 22:14:11,020 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:12,030 - INFO -       [PAGE] Pág 19: Encontrados 10 elementos.
+2025-12-02 22:14:12,053 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:13,006 - INFO -       [PAGE] Pág 20: Encontrados 10 elementos.
+2025-12-02 22:14:13,029 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:13,962 - INFO -       [PAGE] Pág 21: Encontrados 10 elementos.
+2025-12-02 22:14:13,986 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:14,912 - INFO -       [PAGE] Pág 22: Encontrados 10 elementos.
+2025-12-02 22:14:14,936 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:15,899 - INFO -       [PAGE] Pág 23: Encontrados 10 elementos.
+2025-12-02 22:14:15,921 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:16,859 - INFO -       [PAGE] Pág 24: Encontrados 10 elementos.
+2025-12-02 22:14:16,884 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:17,877 - INFO -       [PAGE] Pág 25: Encontrados 10 elementos.
+2025-12-02 22:14:17,900 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:18,847 - INFO -       [PAGE] Pág 26: Encontrados 10 elementos.
+2025-12-02 22:14:18,870 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:19,842 - INFO -       [PAGE] Pág 27: Encontrados 10 elementos.
+2025-12-02 22:14:19,865 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:20,831 - INFO -       [PAGE] Pág 28: Encontrados 10 elementos.
+2025-12-02 22:14:20,855 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:21,814 - INFO -       [PAGE] Pág 29: Encontrados 10 elementos.
+2025-12-02 22:14:21,837 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:22,790 - INFO -       [PAGE] Pág 30: Encontrados 10 elementos.
+2025-12-02 22:14:22,813 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:23,755 - INFO -       [PAGE] Pág 31: Encontrados 10 elementos.
+2025-12-02 22:14:23,779 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:24,728 - INFO -       [PAGE] Pág 32: Encontrados 10 elementos.
+2025-12-02 22:14:24,751 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:25,714 - INFO -       [PAGE] Pág 33: Encontrados 10 elementos.
+2025-12-02 22:14:25,726 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:26,674 - INFO -       [PAGE] Pág 34: Encontrados 10 elementos.
+2025-12-02 22:14:26,697 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:27,716 - INFO -       [PAGE] Pág 35: Encontrados 9 elementos.
+2025-12-02 22:14:27,741 - INFO -    [SAVED] 9 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:14:28,713 - INFO -       [PAGE] Pág 36: Encontrados 10 elementos.
+2025-12-02 22:14:28,740 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:29,728 - INFO -       [PAGE] Pág 37: Encontrados 10 elementos.
+2025-12-02 22:14:29,752 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:30,691 - INFO -       [PAGE] Pág 38: Encontrados 10 elementos.
+2025-12-02 22:14:30,714 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:31,646 - INFO -       [PAGE] Pág 39: Encontrados 10 elementos.
+2025-12-02 22:14:31,669 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:32,680 - INFO -       [PAGE] Pág 40: Encontrados 10 elementos.
+2025-12-02 22:14:32,703 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:33,676 - INFO -       [PAGE] Pág 41: Encontrados 10 elementos.
+2025-12-02 22:14:33,699 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:34,745 - INFO -       [PAGE] Pág 42: Encontrados 10 elementos.
+2025-12-02 22:14:34,768 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:35,747 - INFO -       [PAGE] Pág 43: Encontrados 10 elementos.
+2025-12-02 22:14:35,771 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:36,739 - INFO -       [PAGE] Pág 44: Encontrados 10 elementos.
+2025-12-02 22:14:36,763 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:37,798 - INFO -       [PAGE] Pág 45: Encontrados 10 elementos.
+2025-12-02 22:14:37,824 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:38,813 - INFO -       [PAGE] Pág 46: Encontrados 10 elementos.
+2025-12-02 22:14:38,837 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:39,817 - INFO -       [PAGE] Pág 47: Encontrados 10 elementos.
+2025-12-02 22:14:39,840 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:40,865 - INFO -       [PAGE] Pág 48: Encontrados 10 elementos.
+2025-12-02 22:14:40,892 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:41,843 - INFO -       [PAGE] Pág 49: Encontrados 10 elementos.
+2025-12-02 22:14:41,866 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:42,862 - INFO -       [PAGE] Pág 50: Encontrados 10 elementos.
+2025-12-02 22:14:42,885 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:43,863 - INFO -       [PAGE] Pág 51: Encontrados 10 elementos.
+2025-12-02 22:14:43,885 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:44,893 - INFO -       [PAGE] Pág 52: Encontrados 10 elementos.
+2025-12-02 22:14:44,915 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:45,876 - INFO -       [PAGE] Pág 53: Encontrados 10 elementos.
+2025-12-02 22:14:45,900 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:46,940 - INFO -       [PAGE] Pág 54: Encontrados 10 elementos.
+2025-12-02 22:14:46,963 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:47,951 - INFO -       [PAGE] Pág 55: Encontrados 10 elementos.
+2025-12-02 22:14:47,975 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:48,925 - INFO -       [PAGE] Pág 56: Encontrados 10 elementos.
+2025-12-02 22:14:48,947 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:49,959 - INFO -       [PAGE] Pág 57: Encontrados 10 elementos.
+2025-12-02 22:14:49,981 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:50,931 - INFO -       [PAGE] Pág 58: Encontrados 10 elementos.
+2025-12-02 22:14:50,954 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:51,883 - INFO -       [PAGE] Pág 59: Encontrados 10 elementos.
+2025-12-02 22:14:51,906 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:52,846 - INFO -       [PAGE] Pág 60: Encontrados 10 elementos.
+2025-12-02 22:14:52,874 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:53,804 - INFO -       [PAGE] Pág 61: Encontrados 10 elementos.
+2025-12-02 22:14:53,829 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:54,766 - INFO -       [PAGE] Pág 62: Encontrados 10 elementos.
+2025-12-02 22:14:54,790 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:55,729 - INFO -       [PAGE] Pág 63: Encontrados 8 elementos.
+2025-12-02 22:14:55,750 - INFO -    [SAVED] 8 reseñas procesadas (8 nuevas en DB).
+2025-12-02 22:14:56,672 - INFO -       [PAGE] Pág 64: Encontrados 10 elementos.
+2025-12-02 22:14:56,696 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:14:57,619 - INFO -       [PAGE] Pág 65: Encontrados 8 elementos.
+2025-12-02 22:14:57,640 - INFO -    [SAVED] 8 reseñas procesadas (8 nuevas en DB).
+2025-12-02 22:14:58,596 - INFO -       [PAGE] Pág 66: Encontrados 9 elementos.
+2025-12-02 22:14:58,619 - INFO -    [SAVED] 9 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:14:59,607 - INFO -       [PAGE] Pág 67: Encontrados 10 elementos.
+2025-12-02 22:14:59,631 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:00,569 - INFO -       [PAGE] Pág 68: Encontrados 10 elementos.
+2025-12-02 22:15:00,580 - INFO -    [SAVED] 10 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:15:01,521 - INFO -       [PAGE] Pág 69: Encontrados 10 elementos.
+2025-12-02 22:15:01,545 - INFO -    [SAVED] 10 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:15:02,509 - INFO -       [PAGE] Pág 70: Encontrados 10 elementos.
+2025-12-02 22:15:02,533 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:03,502 - INFO -       [PAGE] Pág 71: Encontrados 10 elementos.
+2025-12-02 22:15:03,526 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:04,476 - INFO -       [PAGE] Pág 72: Encontrados 10 elementos.
+2025-12-02 22:15:04,500 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:05,431 - INFO -       [PAGE] Pág 73: Encontrados 10 elementos.
+2025-12-02 22:15:05,458 - INFO -    [SAVED] 10 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:15:06,390 - INFO -       [PAGE] Pág 74: Encontrados 10 elementos.
+2025-12-02 22:15:06,413 - INFO -    [SAVED] 10 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:15:07,355 - INFO -       [PAGE] Pág 75: Encontrados 10 elementos.
+2025-12-02 22:15:07,378 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:08,317 - INFO -       [PAGE] Pág 76: Encontrados 10 elementos.
+2025-12-02 22:15:08,340 - INFO -    [SAVED] 10 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:15:09,263 - INFO -       [PAGE] Pág 77: Encontrados 10 elementos.
+2025-12-02 22:15:09,285 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:10,207 - INFO -       [PAGE] Pág 78: Encontrados 10 elementos.
+2025-12-02 22:15:10,231 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:11,154 - INFO -       [PAGE] Pág 79: Encontrados 10 elementos.
+2025-12-02 22:15:11,177 - INFO -    [SAVED] 10 reseñas procesadas (10 nuevas en DB).
+2025-12-02 22:15:12,102 - INFO -       [PAGE] Pág 80: Encontrados 10 elementos.
+2025-12-02 22:15:12,125 - INFO -    [SAVED] 10 reseñas procesadas (9 nuevas en DB).
+2025-12-02 22:15:13,073 - INFO -       [PAGE] Pág 81: Encontrados 8 elementos.
+2025-12-02 22:15:13,094 - INFO -    [SAVED] 8 reseñas procesadas (8 nuevas en DB).
+2025-12-02 22:15:13,956 - INFO -       [PAGE] Pág 82: Encontrados 8 elementos.
+2025-12-02 22:15:13,976 - INFO -    [SAVED] 8 reseñas procesadas (8 nuevas en DB).
+2025-12-02 22:15:19,155 - INFO -       [END] Fin de la paginación.
+2025-12-02 22:15:19,155 - INFO - [WORKER] Worker 1: Finalizando. Procesados: 1
+2025-12-02 22:15:19,226 - INFO - 
+[DONE] Proceso finalizado.
