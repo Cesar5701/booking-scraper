@@ -178,10 +178,10 @@ else:
                 
                 if len(text_pos) > 10:
                     # Usamos un mapa de color verde para lo positivo
-                    wc_pos = WordCloud(width=400, height=300, background_color='white', 
+                    wc_pos = WordCloud(width=1200, height=600, background_color='white', 
                                      colormap='Greens', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_pos)
                     
-                    fig_pos, ax_pos = plt.subplots()
+                    fig_pos, ax_pos = plt.subplots(figsize=(12, 6))
                     ax_pos.imshow(wc_pos, interpolation='bilinear')
                     ax_pos.axis("off")
                     st.pyplot(fig_pos)
@@ -204,10 +204,10 @@ else:
 
                 if len(text_neg) > 10:
                     # Usamos un mapa de color rojo/fuego para lo negativo
-                    wc_neg = WordCloud(width=400, height=300, background_color='white', 
+                    wc_neg = WordCloud(width=1200, height=600, background_color='white', 
                                      colormap='Reds', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_neg)
                     
-                    fig_neg, ax_neg = plt.subplots()
+                    fig_neg, ax_neg = plt.subplots(figsize=(12, 6))
                     ax_neg.imshow(wc_neg, interpolation='bilinear')
                     ax_neg.axis("off")
                     st.pyplot(fig_neg)
