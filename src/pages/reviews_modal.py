@@ -8,6 +8,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 
 from booking_selectors import Reviews
 from utils.cleaning import extract_score_from_text
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
 class ReviewsModal:
     """
@@ -24,43 +25,62 @@ class ReviewsModal:
         except NoSuchElementException:
             return ""
 
+    @retry(retry=retry_if_exception_type(StaleElementReferenceException), stop=stop_after_attempt(3), wait=wait_fixed(0.5))
+    def _extract_review_at_index(self, index: int) -> Dict:
+        """
+        Extrae datos de una reseña por índice, reintentando si ocurre StaleElementReferenceException.
+        Re-busca la lista de elementos en cada intento para asegurar frescura.
+        """
+        reviews = self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM)
+        if index >= len(reviews):
+            return {}
+            
+        review = reviews[index]
+        
+        title = self._get_safe_text(review, Reviews.TITLE)
+        raw_score = self._get_safe_text(review, Reviews.SCORE)
+        score = extract_score_from_text(raw_score)
+        
+        pos = self._get_safe_text(review, Reviews.POSITIVE)
+        neg = self._get_safe_text(review, Reviews.NEGATIVE)
+        
+        if not pos and not neg:
+            body = self._get_safe_text(review, Reviews.BODY_FALLBACK)
+            if body: pos = body
+
+        date = self._get_safe_text(review, Reviews.DATE)
+
+        return {
+            "hotel_name": self.hotel_name, "hotel_url": self.hotel_url, 
+            "title": title, "score": score,
+            "positive": pos, "negative": neg, 
+            "date": date
+        }
+
     def extract_current_page(self) -> List[Dict]:
         """Extrae las reseñas visibles en la página actual del modal."""
         try:
-            review_elements = WebDriverWait(self.driver, 10).until(
+            # Esperar presencia inicial
+            WebDriverWait(self.driver, 10).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, Reviews.ITEM))
             )
         except TimeoutException:
             logging.info("Tiempo de espera agotado buscando reseñas en esta página (posible fin).")
             return []
 
+        # Obtener conteo inicial
+        count = len(self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM))
         page_reviews = []
-        for review in review_elements:
+        
+        for i in range(count):
             try:
-                title = self._get_safe_text(review, Reviews.TITLE)
-                raw_score = self._get_safe_text(review, Reviews.SCORE)
-                score = extract_score_from_text(raw_score)
-                
-                pos = self._get_safe_text(review, Reviews.POSITIVE)
-                neg = self._get_safe_text(review, Reviews.NEGATIVE)
-                
-                if not pos and not neg:
-                    body = self._get_safe_text(review, Reviews.BODY_FALLBACK)
-                    if body: pos = body
-
-                date = self._get_safe_text(review, Reviews.DATE)
-
-                data = {
-                    "hotel_name": self.hotel_name, "hotel_url": self.hotel_url, 
-                    "title": title, "score": score,
-                    "positive": pos, "negative": neg, 
-                    "date": date
-                }
-                
-                if data not in page_reviews:
+                data = self._extract_review_at_index(i)
+                if data and data not in page_reviews:
                     page_reviews.append(data)
-            except StaleElementReferenceException:
+            except Exception as e:
+                logging.warning(f"Error extrayendo reseña {i}: {e}")
                 continue
+                
         return page_reviews
 
     def next_page(self) -> bool:
