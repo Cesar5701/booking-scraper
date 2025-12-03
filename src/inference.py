@@ -7,7 +7,8 @@ import numpy as np
 import config
 from core.database import SessionLocal, engine, Base
 from models import Review
-from preprocess import clean_text_basic, detect_language_safe
+from utils.cleaning import clean_text_basic
+from utils.language import detect_language_safe
 
 # Crear tablas si no existen (útil si se borró la DB)
 Base.metadata.create_all(bind=engine)

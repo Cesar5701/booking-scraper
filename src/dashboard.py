@@ -143,14 +143,14 @@ else:
                         color=counts.index,
                         color_discrete_map={'POS': '#28a745', 'NEU': '#ffc107', 'NEG': '#dc3545'}
                     )
-                    st.plotly_chart(fig_pie, use_container_width=True)
+                    st.plotly_chart(fig_pie, width="stretch")
                 else:
                     st.info("[INFO] Ejecuta 'src/inference.py' para ver el análisis de sentimientos.")
             
             with col_b:
                 if selected_hotel == "Todos":
                     st.markdown("#### Ranking de Hoteles (Top 10)")
-                    ranking = df.groupby('hotel_name')['compound_score'].mean().sort_values(ascending=False).head(10).reset_index()
+                    ranking = df.groupby('hotel_name')['compound_score'].mean().sort_values(ascending=False).head(10).iloc[::-1].reset_index()
                     fig_bar = px.bar(ranking, x='compound_score', y='hotel_name', orientation='h', color='compound_score', color_continuous_scale='RdYlGn')
                     st.plotly_chart(fig_bar, width="stretch")
                 else:
