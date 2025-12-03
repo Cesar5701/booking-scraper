@@ -22,6 +22,7 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
     review_headers = ["hotel_name", "hotel_url", "title", "score", "positive", "negative", "date"]
     file_exists = os.path.isfile(filename)
     
+    # Abrimos el archivo en modo append, pero escribiremos solo lo que se guarde en DB
     with open(filename, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=review_headers)
         if not file_exists:
@@ -33,13 +34,11 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
                 break
             
             try:
-                # 1. Escribir en CSV
-                writer.writerows(batch)
-                f.flush()
-                
-                # 2. Escribir en DB
+                # 1. Intentar guardar en DB primero para filtrar duplicados
                 db = SessionLocal()
                 saved_count = 0
+                new_reviews_for_csv = []
+
                 try:
                     for item in batch:
                         # Generar Hash Único
@@ -59,9 +58,12 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
                         try:
                             db.add(review)
                             db.commit()
+                            # Si llegamos aquí, se guardó correctamente (no era duplicado)
                             saved_count += 1
+                            new_reviews_for_csv.append(item)
                         except IntegrityError:
                             db.rollback()
+                            # Duplicado, lo ignoramos
                             pass
                             
                 except Exception as db_e:
@@ -70,7 +72,12 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
                 finally:
                     db.close()
 
-                logging.info(f"   [SAVED] {len(batch)} reseñas procesadas ({saved_count} nuevas en DB).")
+                # 2. Escribir en CSV solo los nuevos
+                if new_reviews_for_csv:
+                    writer.writerows(new_reviews_for_csv)
+                    f.flush()
+
+                logging.info(f"   [SAVED] Procesados {len(batch)}. Nuevos en DB/CSV: {saved_count}.")
             except Exception as e:
                 logging.error(f"Error escribiendo datos: {e}")
             finally:
