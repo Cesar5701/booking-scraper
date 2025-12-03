@@ -37,10 +37,10 @@ def fix_score_value(val: Union[str, float, int, None]) -> Optional[float]:
     if match:
         try:
             num = float(match.group(1))
-            # Corrección heurística para errores de concatenación (ej. 10 + 10 = 1010)
+            num = float(match.group(1))
+            # Normalizar si es mayor a 10 (ej. escala 100)
             if num > 10:
-                if num == 1010: return 10.0
-                if 10 < num < 100: return num / 10
+                if 10 < num <= 100: return num / 10
             return num
         except ValueError: return None
     return None

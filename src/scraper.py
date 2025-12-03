@@ -402,13 +402,14 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
                 # Score
                 raw_score = _get_safe_text(review, Reviews.SCORE)
 
-                # Limpiar el score: tomar solo la primera línea y reemplazar comas.
-                if '\n' in raw_score:
-                    score = raw_score.split('\n')[0]
+                # Limpiar el score: usar regex para extraer el primer número válido (ej. 8.5, 10)
+                # Esto evita problemas como "1010" si el texto es "10 10" o similar
+                import re
+                score_match = re.search(r'(\d+[\.,]?\d*)', raw_score.replace(',', '.'))
+                if score_match:
+                    score = score_match.group(1)
                 else:
-                    score = raw_score
-                
-                score = score.replace("Score:", "").replace("Puntuación:", "").replace(",", ".").strip()
+                    score = "0"
                 
                 # Texto Positivo/Negativo
                 pos = _get_safe_text(review, Reviews.POSITIVE)
