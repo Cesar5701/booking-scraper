@@ -59,16 +59,44 @@ class HotelPage:
             pass
         return 0
 
+    def close_google_one_tap(self):
+        """Intenta cerrar el popup de Google One Tap si existe."""
+        try:
+            # Buscar iframes que puedan ser el de Google
+            iframes = self.driver.find_elements(By.CSS_SELECTOR, "iframe[id*='credential_picker']")
+            for iframe in iframes:
+                try:
+                    self.driver.switch_to.frame(iframe)
+                    # Intentar cerrar. El selector del botón de cierre puede variar, probamos uno genérico o por ID
+                    close_btn = WebDriverWait(self.driver, 1).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, "#close"))
+                    )
+                    self.driver.execute_script("arguments[0].click();", close_btn)
+                    logging.info("      [POPUP] Google One Tap cerrado.")
+                except Exception:
+                    pass
+                finally:
+                    self.driver.switch_to.default_content()
+        except Exception:
+            pass
+
     def open_reviews_modal(self) -> ReviewsModal:
         """Cierra popups y abre el modal de reseñas."""
         driver = self.driver
         
-        # Cerrar popups
+        # 1. Intentar cerrar Google One Tap primero (suele bloquear otros clicks)
+        self.close_google_one_tap()
+        
+        # 2. Cerrar popups de Booking (Genius, Login, Encuestas)
         try:
-            WebDriverWait(driver, 3).until(
+            # Usar execute_script para evitar ElementClickInterceptedException
+            close_btn = WebDriverWait(driver, 3).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, HotelPageSelectors.LOGIN_POPUP_CLOSE))
-            ).click()
-        except (TimeoutException, NoSuchElementException): pass
+            )
+            driver.execute_script("arguments[0].click();", close_btn)
+            logging.info("      [POPUP] Popup de Booking cerrado.")
+        except (TimeoutException, NoSuchElementException, ElementClickInterceptedException): 
+            pass
 
         # Abrir pestaña reseñas
         logging.info("      -> Intentando abrir panel de reseñas...")

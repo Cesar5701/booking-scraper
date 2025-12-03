@@ -22,6 +22,7 @@ HEADLESS_MODE = False
 MAX_WAIT_TIME = 10
 HOTEL_VISIT_LIMIT = 0  # 0 = Todos
 MAX_WORKERS = 8 # Número de navegadores simultáneos
+MAX_REVIEWS_PER_HOTEL = 1000 # Límite de reseñas por hotel
 TIME_BETWEEN_PAGES_MIN = 2.0
 TIME_BETWEEN_PAGES_MAX = 3.5
 

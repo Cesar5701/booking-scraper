@@ -157,7 +157,7 @@ def run_pipeline(hotel_urls: List[str], processed_urls: Set[str] = set()) -> Non
     # Iniciar hilo escritor (Consumer)
     writer_thread = threading.Thread(
         target=csv_writer_listener,
-        args=(result_queue, config.DATA_FILE)
+        args=(result_queue, config.RAW_REVIEWS_FILE)
     )
     writer_thread.start()
     

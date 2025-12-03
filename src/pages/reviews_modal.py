@@ -109,3 +109,29 @@ class ReviewsModal:
         except Exception as e:
             logging.error(f"Error al intentar cambiar de página: {e}")
             return False
+
+    def extract_all_reviews(self, max_reviews: int = 1000) -> List[Dict]:
+        """
+        Extrae todas las reseñas disponibles paginando hasta alcanzar max_reviews.
+        """
+        all_reviews = []
+        page = 1
+        
+        while True:
+            logging.info(f"      [PAGE] Procesando página {page}...")
+            batch = self.extract_current_page()
+            
+            if batch:
+                all_reviews.extend(batch)
+                logging.info(f"      [PAGE] Pág {page}: {len(batch)} reseñas extraídas. Total: {len(all_reviews)}")
+            
+            if len(all_reviews) >= max_reviews:
+                logging.info(f"      [LIMIT] Límite de {max_reviews} reseñas alcanzado.")
+                break
+            
+            if not self.next_page():
+                break
+                
+            page += 1
+            
+        return all_reviews[:max_reviews]
