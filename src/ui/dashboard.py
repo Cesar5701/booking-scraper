@@ -3,9 +3,11 @@ import sys
 import os
 
 # Asegurar que el directorio actual (src) esté en el path para imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
+# Asegurar que el directorio raíz del código fuente (src) esté en el path
+current_dir = os.path.dirname(os.path.abspath(__file__)) # src/ui
+src_dir = os.path.dirname(current_dir) # src
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
 import pandas as pd
 import plotly.express as px
 from wordcloud import WordCloud

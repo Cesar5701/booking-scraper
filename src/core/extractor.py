@@ -19,10 +19,19 @@ class ReviewExtractor:
     """
     
     def __init__(self, driver: webdriver.Chrome):
+        """
+        Inicializa el extractor con un driver de Selenium.
+        
+        Args:
+            driver (webdriver.Chrome): Instancia del navegador controlada por Selenium.
+        """
         self.driver = driver
 
     def _get_safe_text(self, element, selector: str) -> str:
-        """Ayuda a extraer texto de forma segura."""
+        """
+        Intenta extraer el texto de un elemento hijo usando un selector CSS.
+        Retorna cadena vacía si no se encuentra.
+        """
         try:
             return element.find_element(By.CSS_SELECTOR, selector).text.strip()
         except NoSuchElementException:
@@ -99,8 +108,13 @@ class ReviewExtractor:
 
     def extract_reviews(self, hotel_url: str) -> Generator[List[Dict], None, None]:
         """
-        Navega al hotel, abre reseñas y extrae datos paginados.
-        Yields lotes de reseñas.
+        Navega a la URL del hotel, abre el panel de reseñas y extrae los datos paginados.
+        
+        Args:
+            hotel_url (str): URL de la página del hotel en Booking.com.
+            
+        Yields:
+            List[Dict]: Una lista de diccionarios, donde cada diccionario representa una reseña.
         """
         driver = self.driver
         driver.get(hotel_url)

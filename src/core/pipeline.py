@@ -76,9 +76,14 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
             finally:
                 result_queue.task_done()
 
-def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int):
+def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -> None:
     """
     Proceso de trabajador que maneja su propio driver y procesa una lista de URLs.
+    
+    Args:
+        urls (List[str]): Lista de URLs asignadas a este worker.
+        result_queue (queue.Queue): Cola compartida para enviar resultados.
+        worker_id (int): Identificador numérico del worker para logging.
     """
     logging.info(f"[WORKER] Worker {worker_id}: Iniciando con {len(urls)} hoteles.")
     driver = initialize_driver()
@@ -100,9 +105,12 @@ def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int):
         logging.info(f"[WORKER] Worker {worker_id}: Finalizando. Procesados: {processed_count}")
         driver.quit()
 
-def run_pipeline(links_to_process: List[str]):
+def run_pipeline(links_to_process: List[str]) -> None:
     """
-    Orquesta la ejecución paralela del scraping.
+    Orquesta la ejecución paralela del scraping dividiendo el trabajo entre workers.
+    
+    Args:
+        links_to_process (List[str]): Lista total de URLs de hoteles a procesar.
     """
     import math
     
