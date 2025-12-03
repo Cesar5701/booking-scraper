@@ -1391,3 +1391,101 @@ Stacktrace:
 2025-12-02 20:59:04,016 - INFO - [WORKER] Worker 1: Finalizando. Procesados: 1
 2025-12-02 20:59:04,077 - INFO - 
 [DONE] Proceso finalizado.
+2025-12-02 21:01:59,029 - INFO - [RESUME] Lógica de reanudación activada. 189 hoteles ya procesados.
+2025-12-02 21:01:59,029 - INFO - --- FASE 1: BÚSQUEDA DE HOTELES ---
+2025-12-02 21:01:59,029 - INFO - 🚀 Iniciando WebDriver (Core)...
+2025-12-02 21:01:59,061 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36
+2025-12-02 21:01:59,062 - INFO - ====== WebDriver manager ======
+2025-12-02 21:01:59,127 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 21:01:59,262 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 21:01:59,391 - INFO - Driver [/home/cesar/.wdm/drivers/chromedriver/linux64/142.0.7444.175/chromedriver-linux64/chromedriver] found in cache
+2025-12-02 21:02:01,006 - INFO - Navegando a: https://www.booking.com/searchresults.html?ss=Tlaxcala%2C+Tlaxcala%2C+M%C3%A9xico&lang=es
+2025-12-02 21:02:05,980 - INFO - Cargando lista completa (Scroll + Botón 'Cargar más')...
+2025-12-02 21:02:12,637 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 21:02:13,789 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 21:02:14,944 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 21:02:16,119 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 21:02:17,315 - INFO -    -> Botón 'Cargar más' clickeado.
+2025-12-02 21:02:27,677 - INFO -    [WAIT] No se detectaron cambios. Intento 1/3
+2025-12-02 21:02:32,837 - INFO -    [WAIT] No se detectaron cambios. Intento 2/3
+2025-12-02 21:02:37,986 - INFO -    [WAIT] No se detectaron cambios. Intento 3/3
+2025-12-02 21:02:37,986 - INFO - Extrayendo enlaces finales...
+2025-12-02 21:02:38,818 - INFO - TOTAL HOTELES ENCONTRADOS: 220
+2025-12-02 21:02:38,880 - INFO - [TEST MODE] Procesando solo los primeros 1 hoteles.
+2025-12-02 21:02:38,880 - INFO - --- FASE 2: EXTRACCIÓN PARALELA (1 Workers) ---
+2025-12-02 21:02:38,881 - INFO - [WORKER] Worker 1: Iniciando con 1 hoteles.
+2025-12-02 21:02:38,881 - INFO - 🚀 Iniciando WebDriver (Core)...
+2025-12-02 21:02:38,908 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Mobile/15E148 Safari/604.1
+2025-12-02 21:02:38,909 - INFO - ====== WebDriver manager ======
+2025-12-02 21:02:38,974 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 21:02:39,104 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 21:02:39,237 - INFO - Driver [/home/cesar/.wdm/drivers/chromedriver/linux64/142.0.7444.175/chromedriver-linux64/chromedriver] found in cache
+2025-12-02 21:02:40,401 - INFO - [WORKER] Worker 1: Procesando https://www.booking.com/hotel/mx/hb-express.es.html?aid=304142&label=gen173nr-10CAQoggJCInNlYXJjaF90bGF4Y2FsYSwgdGxheGNhbGEsIG3DqXhpY29IClgEaKABiAECmAEzuAEJyAER2AED6AEB-AEBiAIBqAIBuAKq0L7JBsACAdICJGQ0OGY1MGM1LTcxNjAtNDkwMS04YzdjLTcyNWNiODAyY2IxZdgCAeACAQ&ucfs=1&arphpl=1&group_adults=2&req_adults=2&no_rooms=1&group_children=0&req_children=0&hpos=1&hapos=1&sr_order=popularity&srpvid=501f1555846a0036&srepoch=1764730938
+2025-12-02 21:02:41,788 - INFO -    [HOTEL] Procesando: 
+2025-12-02 21:02:46,359 - ERROR - Worker 1 error en https://www.booking.com/hotel/mx/hb-express.es.html?aid=304142&label=gen173nr-10CAQoggJCInNlYXJjaF90bGF4Y2FsYSwgdGxheGNhbGEsIG3DqXhpY29IClgEaKABiAECmAEzuAEJyAER2AED6AEB-AEBiAIBqAIBuAKq0L7JBsACAdICJGQ0OGY1MGM1LTcxNjAtNDkwMS04YzdjLTcyNWNiODAyY2IxZdgCAeACAQ&ucfs=1&arphpl=1&group_adults=2&req_adults=2&no_rooms=1&group_children=0&req_children=0&hpos=1&hapos=1&sr_order=popularity&srpvid=501f1555846a0036&srepoch=1764730938: Message: element click intercepted: Element <button aria-label="Cerrar encuesta" type="button" class="de576f5064 b46cd7aad7 e26a59bb37 c295306d66 c7a901b0e7 daf5d4cb1c">...</button> is not clickable at point (1862, 922). Other element would receive the click: <iframe src="https://accounts.google.com/gsi/iframe/select?client_id=901905703382-m88jn1h9ll89odkt6t5muc6h7ep83rlh.apps.googleusercontent.com&amp;auto_select=false&amp;ux_mode=popup&amp;ui_mode=bottom_sheet&amp;context=signin&amp;nonce=03737379544270292&amp;as=wiPe_fY1kOIYKCrrgyzHsHwcTb8m4rq34hz-2q03fmM&amp;bs=RFKL6cc9LJ9Gwv%2Fum8qHuaLl99cpv1wjgIIRclFX3QU&amp;is_itp=true&amp;channel_id=83d4f1a8767490786fe6c70eb04c43b4fe812f0a76ab7eae3b41926b1c219e8c&amp;origin=https%3A%2F%2Fwww.booking.com&amp;oauth2_auth_url=https%3A%2F%2Faccounts.google.com%2Fo%2Foauth2%2Fv2%2Fauth" id="credential_picker_iframe" title="Diálogo de Acceder con Google" class="L5Fo6c-PQbLGe" allow="identity-credentials-get" style="height: 206px; width: 100%; z-index: 9999; border: none; position: fixed; left: 0px; bottom: 0px;"></iframe>
+  (Session info: chrome=142.0.7444.175); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#elementclickinterceptedexception
+Stacktrace:
+#0 0x55c08c0094ca <unknown>
+#1 0x55c08ba57e4b <unknown>
+#2 0x55c08bab16fc <unknown>
+#3 0x55c08baaf552 <unknown>
+#4 0x55c08baacbe2 <unknown>
+#5 0x55c08baac27f <unknown>
+#6 0x55c08ba9eb6b <unknown>
+#7 0x55c08ba9e4e7 <unknown>
+#8 0x55c08baf6df7 <unknown>
+#9 0x55c08ba9cc2a <unknown>
+#10 0x55c08ba9d931 <unknown>
+#11 0x55c08bfcfcf9 <unknown>
+#12 0x55c08bfd2cdc <unknown>
+#13 0x55c08bfb8f79 <unknown>
+#14 0x55c08bfd38b5 <unknown>
+#15 0x55c08bfa09c3 <unknown>
+#16 0x55c08bff6228 <unknown>
+#17 0x55c08bff6403 <unknown>
+#18 0x55c08c008463 <unknown>
+#19 0x7f4241a40464 start_thread
+#20 0x7f4241ac35ac __clone3
+Traceback (most recent call last):
+  File "/home/cesar/Documents/Tesis/booking-scraper/src/core/pipeline.py", line 92, in worker_process
+    for batch in extractor.extract_reviews(url):
+  File "/home/cesar/Documents/Tesis/booking-scraper/src/core/extractor.py", line 125, in extract_reviews
+    ).click()
+      ^^^^^^^
+  File "/home/cesar/Documents/Tesis/booking-scraper/scraper_env/lib64/python3.11/site-packages/selenium/webdriver/remote/webelement.py", line 119, in click
+    self._execute(Command.CLICK_ELEMENT)
+  File "/home/cesar/Documents/Tesis/booking-scraper/scraper_env/lib64/python3.11/site-packages/selenium/webdriver/remote/webelement.py", line 572, in _execute
+    return self._parent.execute(command, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cesar/Documents/Tesis/booking-scraper/scraper_env/lib64/python3.11/site-packages/selenium/webdriver/remote/webdriver.py", line 458, in execute
+    self.error_handler.check_response(response)
+  File "/home/cesar/Documents/Tesis/booking-scraper/scraper_env/lib64/python3.11/site-packages/selenium/webdriver/remote/errorhandler.py", line 233, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.ElementClickInterceptedException: Message: element click intercepted: Element <button aria-label="Cerrar encuesta" type="button" class="de576f5064 b46cd7aad7 e26a59bb37 c295306d66 c7a901b0e7 daf5d4cb1c">...</button> is not clickable at point (1862, 922). Other element would receive the click: <iframe src="https://accounts.google.com/gsi/iframe/select?client_id=901905703382-m88jn1h9ll89odkt6t5muc6h7ep83rlh.apps.googleusercontent.com&amp;auto_select=false&amp;ux_mode=popup&amp;ui_mode=bottom_sheet&amp;context=signin&amp;nonce=03737379544270292&amp;as=wiPe_fY1kOIYKCrrgyzHsHwcTb8m4rq34hz-2q03fmM&amp;bs=RFKL6cc9LJ9Gwv%2Fum8qHuaLl99cpv1wjgIIRclFX3QU&amp;is_itp=true&amp;channel_id=83d4f1a8767490786fe6c70eb04c43b4fe812f0a76ab7eae3b41926b1c219e8c&amp;origin=https%3A%2F%2Fwww.booking.com&amp;oauth2_auth_url=https%3A%2F%2Faccounts.google.com%2Fo%2Foauth2%2Fv2%2Fauth" id="credential_picker_iframe" title="Diálogo de Acceder con Google" class="L5Fo6c-PQbLGe" allow="identity-credentials-get" style="height: 206px; width: 100%; z-index: 9999; border: none; position: fixed; left: 0px; bottom: 0px;"></iframe>
+  (Session info: chrome=142.0.7444.175); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#elementclickinterceptedexception
+Stacktrace:
+#0 0x55c08c0094ca <unknown>
+#1 0x55c08ba57e4b <unknown>
+#2 0x55c08bab16fc <unknown>
+#3 0x55c08baaf552 <unknown>
+#4 0x55c08baacbe2 <unknown>
+#5 0x55c08baac27f <unknown>
+#6 0x55c08ba9eb6b <unknown>
+#7 0x55c08ba9e4e7 <unknown>
+#8 0x55c08baf6df7 <unknown>
+#9 0x55c08ba9cc2a <unknown>
+#10 0x55c08ba9d931 <unknown>
+#11 0x55c08bfcfcf9 <unknown>
+#12 0x55c08bfd2cdc <unknown>
+#13 0x55c08bfb8f79 <unknown>
+#14 0x55c08bfd38b5 <unknown>
+#15 0x55c08bfa09c3 <unknown>
+#16 0x55c08bff6228 <unknown>
+#17 0x55c08bff6403 <unknown>
+#18 0x55c08c008463 <unknown>
+#19 0x7f4241a40464 start_thread
+#20 0x7f4241ac35ac __clone3
+
+2025-12-02 21:02:46,360 - INFO - [WORKER] Worker 1: Finalizando. Procesados: 1
+2025-12-02 21:02:46,416 - INFO - 
+[DONE] Proceso finalizado.

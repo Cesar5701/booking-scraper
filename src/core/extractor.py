@@ -112,11 +112,11 @@ class ReviewExtractor:
             return
 
         hotel_name = self.get_hotel_name()
-        print(f"   [HOTEL] Procesando: {hotel_name}")
+        logging.info(f"   [HOTEL] Procesando: {hotel_name}")
         
         expected_count = self.get_total_review_count()
         if expected_count > 0:
-            print(f"      [INFO] Se esperan aprox. {expected_count} reseñas.")
+            logging.info(f"      [INFO] Se esperan aprox. {expected_count} reseñas.")
 
         # Cerrar popups
         try:
@@ -126,7 +126,7 @@ class ReviewExtractor:
         except (TimeoutException, NoSuchElementException): pass
 
         # Abrir pestaña reseñas
-        print("      -> Intentando abrir panel de reseñas...")
+        logging.info("      -> Intentando abrir panel de reseñas...")
         reviews_opened = False
         for by, selector in HotelPage.OPEN_REVIEWS_STRATEGIES:
             try:
@@ -136,7 +136,7 @@ class ReviewExtractor:
                     EC.presence_of_element_located((By.CSS_SELECTOR, Reviews.ITEM))
                 )
                 reviews_opened = True
-                print(f"      [OK] Panel abierto usando: {selector}")
+                logging.info(f"      [OK] Panel abierto usando: {selector}")
                 break
             except (TimeoutException, ElementClickInterceptedException):
                 continue
@@ -158,7 +158,7 @@ class ReviewExtractor:
                 logging.info("Tiempo de espera agotado buscando reseñas en esta página (posible fin).")
                 break
 
-            print(f"      [PAGE] Pág {page}: Encontrados {len(review_elements)} elementos.")
+            logging.info(f"      [PAGE] Pág {page}: Encontrados {len(review_elements)} elementos.")
             
             page_reviews = []
             for review in review_elements:
@@ -209,7 +209,7 @@ class ReviewExtractor:
                 )
                 page += 1
             except (TimeoutException, NoSuchElementException):
-                print("      [END] Fin de la paginación.")
+                logging.info("      [END] Fin de la paginación.")
                 break 
             except Exception as e:
                 logging.error(f"Error al intentar cambiar de página: {e}")

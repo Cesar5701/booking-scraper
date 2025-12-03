@@ -34,7 +34,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
     Returns:
         List[str]: Lista de URLs de los hoteles encontrados.
     """
-    print(f"[INFO] Navegando a: {url}")
+    logging.info(f"Navegando a: {url}")
     driver.get(url)
 
     try:
@@ -42,10 +42,10 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
             EC.presence_of_element_located(SearchResults.PROPERTY_CARD)
         )
     except TimeoutException:
-        print("[ERROR] Los resultados iniciales no cargaron. Abortando.")
+        logging.error("Los resultados iniciales no cargaron. Abortando.")
         return []
 
-    print("[INFO] Cargando lista completa (Scroll + Botón 'Cargar más')...")
+    logging.info("Cargando lista completa (Scroll + Botón 'Cargar más')...")
     scroll_attempts = 0
     max_attempts = 3
     
@@ -63,7 +63,7 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
                 EC.element_to_be_clickable(SearchResults.LOAD_MORE_BUTTON)
             )
             driver.execute_script("arguments[0].click();", load_more_btn)
-            print("   -> Botón 'Cargar más' clickeado.")
+            logging.info("   -> Botón 'Cargar más' clickeado.")
             
             # Esperar a que carguen más elementos (CRÍTICO: esperar cambio en conteo)
             WebDriverWait(driver, 10).until(
@@ -82,12 +82,12 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
             else:
                 scroll_attempts = 0 # Se movió, seguimos intentando
     
-    print("\n[INFO] Extrayendo enlaces finales...")
+    logging.info("Extrayendo enlaces finales...")
     # Intentar múltiples selectores para los enlaces
     elements = driver.find_elements(By.CSS_SELECTOR, SearchResults.HOTEL_LINKS)
     links = list(dict.fromkeys([e.get_attribute("href") for e in elements if e.get_attribute("href")]))
     
-    print(f"[INFO] TOTAL HOTELES ENCONTRADOS: {len(links)}")
+    logging.info(f"TOTAL HOTELES ENCONTRADOS: {len(links)}")
     
     # Guardar respaldo de enlaces
     with open(config.LINKS_FILE, "w", newline="", encoding="utf-8") as f:
