@@ -1,0 +1,9 @@
+selenium
+sqlalchemy
+pandas
+pysentimiento
+webdriver_manager
+fake_useragent
+tenacity
+torch
+tqdm

@@ -1,23 +1,28 @@
 import queue
 import threading
-import concurrent.futures
+import logging
 import csv
 import os
-import logging
 import hashlib
-from typing import List
+from typing import List, Dict, Optional, Set
 from sqlalchemy.exc import IntegrityError
 
 import config
-from core.driver import initialize_driver
 from core.database import SessionLocal
 from models import Review
 from pages.hotel_page import HotelPage
+from core.driver import initialize_driver
 
-def csv_writer_listener(result_queue: queue.Queue, filename: str):
+def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
     """
-    Hilo dedicado a escuchar la cola y escribir en el CSV y DB.
-    Termina cuando recibe None.
+    Hilo dedicado a escuchar la cola de resultados y persistir los datos en CSV y Base de Datos.
+    
+    Implementa un patrón productor-consumidor donde este hilo actúa como consumidor único
+    para escritura, evitando condiciones de carrera en el archivo y la DB.
+    
+    Args:
+        result_queue (queue.Queue): Cola compartida de donde se leen los lotes de reseñas.
+        filename (str): Ruta del archivo CSV donde se exportarán los datos.
     """
     review_headers = config.REVIEW_CSV_HEADERS
     file_exists = os.path.isfile(filename)
@@ -33,7 +38,7 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
         try:
             while True:
                 batch = result_queue.get()
-                if batch is None: # Poison pill
+                if batch is None: # Poison pill para detener el hilo
                     break
                 
                 try:
@@ -43,7 +48,7 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
 
                     try:
                         for item in batch:
-                            # Generar Hash Único
+                            # Generar Hash Único basado en campos clave
                             unique_str = f"{item.get('hotel_url')}{item.get('date')}{item.get('title')}{item.get('positive')}{item.get('negative')}"
                             review_hash = hashlib.md5(unique_str.encode('utf-8')).hexdigest()
                             
@@ -65,14 +70,14 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
                                 new_reviews_for_csv.append(item)
                             except IntegrityError:
                                 db.rollback()
-                                # Duplicado, lo ignoramos
+                                # Duplicado, lo ignoramos silenciosamente
                                 pass
                                 
                     except Exception as db_e:
                         logging.error(f"Error guardando en DB: {db_e}")
                         db.rollback()
 
-                    # 2. Escribir en CSV solo los nuevos
+                    # 2. Escribir en CSV solo los registros que fueron nuevos en la DB
                     if new_reviews_for_csv:
                         writer.writerows(new_reviews_for_csv)
                         f.flush()
@@ -87,82 +92,94 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
 
 def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -> None:
     """
-    Proceso de trabajador que maneja su propio driver y procesa una lista de URLs.
+    Función ejecutada por cada hilo worker para procesar una lista de URLs de hoteles.
     
     Args:
-        urls (List[str]): Lista de URLs asignadas a este worker.
-        result_queue (queue.Queue): Cola compartida para enviar resultados.
+        urls (List[str]): Lista de URLs de hoteles asignada a este worker.
+        result_queue (queue.Queue): Cola compartida para enviar los resultados (reseñas).
         worker_id (int): Identificador numérico del worker para logging.
     """
-    logging.info(f"[WORKER] Worker {worker_id}: Iniciando con {len(urls)} hoteles.")
     driver = initialize_driver()
     hotel_page = HotelPage(driver)
     
-    processed_count = 0
-    try:
-        for url in urls:
-            logging.info(f"[WORKER] Worker {worker_id}: Procesando {url}")
-            try:
-                hotel_page.navigate(url)
-                hotel_name = hotel_page.get_name()
-                logging.info(f"   [HOTEL] Procesando: {hotel_name}")
-                
-                reviews_modal = hotel_page.open_reviews_modal()
-                if not reviews_modal:
-                    continue
-                    
-                page = 1
-                while True:
-                    batch = reviews_modal.extract_current_page()
-                    if batch:
-                        logging.info(f"      [PAGE] Pág {page}: Encontrados {len(batch)} elementos.")
-                        result_queue.put(batch)
-                    
-                    if not reviews_modal.next_page():
-                        break
-                    page += 1
-                    
-            except Exception as e:
-                logging.error(f"Worker {worker_id} error en {url}: {e}", exc_info=True)
-            processed_count += 1
+    logging.info(f"Worker {worker_id} iniciado. Procesando {len(urls)} URLs.")
+    
+    for url in urls:
+        try:
+            logging.info(f"Worker {worker_id} visitando: {url}")
+            hotel_page.navigate(url)
             
-    finally:
-        logging.info(f"[WORKER] Worker {worker_id}: Finalizando. Procesados: {processed_count}")
-        driver.quit()
+            # Abrir modal de reseñas
+            reviews_modal = hotel_page.open_reviews_modal()
+            if not reviews_modal:
+                logging.warning(f"Worker {worker_id}: No se pudo abrir modal para {url}")
+                continue
+            
+            # Extraer reseñas
+            all_reviews = reviews_modal.extract_all_reviews(max_reviews=config.MAX_REVIEWS_PER_HOTEL)
+            
+            if all_reviews:
+                result_queue.put(all_reviews)
+                logging.info(f"Worker {worker_id}: {len(all_reviews)} reseñas enviadas a cola para {url}")
+            else:
+                logging.warning(f"Worker {worker_id}: 0 reseñas extraídas para {url}")
+                
+        except Exception as e:
+            logging.error(f"Worker {worker_id} error en {url}: {e}")
+            # Importante: No detener el worker por un error en un hotel, seguir con el siguiente
+            continue
+            
+    driver.quit()
+    logging.info(f"Worker {worker_id} finalizado.")
 
-def run_pipeline(links_to_process: List[str]) -> None:
+def run_pipeline(hotel_urls: List[str], processed_urls: Set[str] = set()) -> None:
     """
-    Orquesta la ejecución paralela del scraping dividiendo el trabajo entre workers.
+    Orquesta el proceso de scraping paralelo.
+    
+    Divide las URLs en chunks, inicia los workers y el hilo escritor, y espera a que terminen.
     
     Args:
-        links_to_process (List[str]): Lista total de URLs de hoteles a procesar.
+        hotel_urls (List[str]): Lista total de URLs de hoteles a procesar.
+        processed_urls (Set[str], optional): Conjunto de URLs ya procesadas para omitir.
     """
-    import math
+    # Filtrar URLs ya procesadas
+    urls_to_process = [url for url in hotel_urls if url not in processed_urls]
     
-    logging.info(f"--- FASE 2: EXTRACCIÓN PARALELA ({config.MAX_WORKERS} Workers) ---")
-    
-    # Cola de resultados
+    if not urls_to_process:
+        logging.info("No hay nuevas URLs para procesar.")
+        return
+
+    logging.info(f"Iniciando pipeline para {len(urls_to_process)} hoteles con {config.MAX_WORKERS} workers.")
+
+    # Cola para comunicar workers -> escritor
     result_queue = queue.Queue()
     
-    # Iniciar Hilo Escritor
-    writer_thread = threading.Thread(target=csv_writer_listener, args=(result_queue, config.RAW_REVIEWS_FILE))
+    # Iniciar hilo escritor (Consumer)
+    writer_thread = threading.Thread(
+        target=csv_writer_listener,
+        args=(result_queue, config.DATA_FILE)
+    )
     writer_thread.start()
     
-    # Dividir trabajo
-    chunk_size = math.ceil(len(links_to_process) / config.MAX_WORKERS)
-    chunks = [links_to_process[i:i + chunk_size] for i in range(0, len(links_to_process), chunk_size)]
+    # Dividir trabajo (URLs) entre workers
+    chunk_size = (len(urls_to_process) // config.MAX_WORKERS) + 1
+    chunks = [urls_to_process[i:i + chunk_size] for i in range(0, len(urls_to_process), chunk_size)]
     
-    # Iniciar Workers
-    with concurrent.futures.ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        futures = []
-        for i, chunk in enumerate(chunks):
-            futures.append(executor.submit(worker_process, chunk, result_queue, i+1))
+    threads = []
+    for i, chunk in enumerate(chunks):
+        if not chunk: continue
+        t = threading.Thread(target=worker_process, args=(chunk, result_queue, i+1))
+        t.start()
+        threads.append(t)
         
-        # Esperar a que terminen los workers
-        concurrent.futures.wait(futures)
-    
-    # Detener Hilo Escritor
+    # Esperar a que todos los workers terminen
+    for t in threads:
+        t.join()
+        
+    # Enviar señal de terminación (Poison Pill) al escritor
     result_queue.put(None)
+    
+    # Esperar a que el escritor termine
     writer_thread.join()
     
-    logging.info("\n[DONE] Proceso finalizado.")
+    logging.info("Pipeline finalizado correctamente.")
