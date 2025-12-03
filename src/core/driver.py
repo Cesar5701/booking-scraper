@@ -22,7 +22,14 @@ def initialize_driver():
     
     # Configuración de idioma español
     options.add_argument("--lang=es-MX")
-    options.add_experimental_option('prefs', {'intl.accept_languages': 'es-MX,es'})
+    options.add_experimental_option('prefs', {
+        'intl.accept_languages': 'es-MX,es',
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False
+    })
+
+    # Disable Google One Tap and other optimization features that might cause popups
+    options.add_argument("--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationTargetPrediction,OptimizationHints")
     
     # User-Agent Rotativo
     try:

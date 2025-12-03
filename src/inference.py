@@ -86,79 +86,46 @@ def main():
     db = SessionLocal()
     
     try:
-        # 1. Leer reseñas de la DB que no tengan sentimiento calculado
-        reviews = db.query(Review).all()
+        # 1. Contar total de reseñas para informar
+        total_reviews = db.query(Review).count()
+        print(f"[INFO] Found {total_reviews} reviews in DB.")
         
-        if not reviews:
+        if total_reviews == 0:
             print("[ERROR] No reviews found in Database. Run scraper first.")
             return
 
-        print(f"[INFO] Found {len(reviews)} reviews in DB.")
+        # --- PROCESSING IN BATCHES ---
+        print("[INFO] Starting batch processing...")
         
-        # --- PREPROCESSING ---
-        print("[INFO] Preprocessing and Detecting Language...")
-        valid_reviews = []
+        # Tamaño del lote para lectura de DB
+        DB_BATCH_SIZE = 1000
         
-        for r in tqdm(reviews, desc="Preprocessing"):
-            # Combinar título y cuerpo
-            full_text = f"{r.title or ''} {r.positive or ''} {r.negative or ''}".strip()
-            
-            # Limpieza
+        # Query con yield_per para no cargar todo en RAM
+        query = db.query(Review).yield_per(DB_BATCH_SIZE)
+        
+        batch_buffer = []
+        
+        for i, review in enumerate(tqdm(query, total=total_reviews, desc="Processing Reviews")):
+            # Preprocessing
+            full_text = f"{review.title or ''} {review.positive or ''} {review.negative or ''}".strip()
             processed = clean_text_basic(full_text)
-            r.full_review_processed = processed
+            review.full_review_processed = processed
             
-            # Idioma
             lang = detect_language_safe(processed)
-            r.language = lang
+            review.language = lang
             
             if lang in ['es', 'en']:
-                valid_reviews.append(r)
-        
-        db.commit() # Guardar progreso de preprocesamiento
-        print(f"[INFO] Valid reviews for inference (ES/EN): {len(valid_reviews)}")
-
-        # --- INFERENCE ---
-        # Separar por idioma para procesamiento eficiente (aunque predict_sentiment_multilingual ya lo hace,
-        # aquí estamos trabajando con objetos ORM, no DataFrame directamente, pero la función espera DataFrame?
-        # Revisando el código original: predict_sentiment_multilingual tomaba DF, pero main usaba listas y bucles manuales.
-        # Voy a adaptar main para usar la lógica de predict_sentiment_multilingual si convierto a DF, 
-        # O mantener la lógica de main pero usando get_analyzer.
-        
-        # El código original de main NO llamaba a predict_sentiment_multilingual. Tenía la lógica duplicada o similar.
-        # Voy a refactorizar main para que sea más limpio y use get_analyzer directamente.
-        
-        reviews_es = [r for r in valid_reviews if r.language == 'es']
-        reviews_en = [r for r in valid_reviews if r.language == 'en']
-
-        # Procesar Español
-        if reviews_es:
-            print(f"\n[ES] Processing {len(reviews_es)} Spanish reviews...")
-            analyzer_es = get_analyzer('es')
-            texts = [r.full_review_processed for r in reviews_es]
-            preds = predict_in_batches(analyzer_es, texts, 'es')
+                batch_buffer.append(review)
             
-            for r, p in zip(reviews_es, preds):
-                r.sentiment_label = p.output
-                r.sentiment_score_pos = p.probas.get('POS', 0.0)
-                r.sentiment_score_neg = p.probas.get('NEG', 0.0)
-                r.sentiment_score_neu = p.probas.get('NEU', 0.0)
+            # Procesar cuando el buffer se llena o es el último elemento
+            if len(batch_buffer) >= config.BATCH_SIZE or (i + 1 == total_reviews and batch_buffer):
+                _process_inference_batch(batch_buffer)
+                batch_buffer = [] # Limpiar buffer
+                
+                # Commit parcial para guardar progreso y liberar memoria de la sesión si fuera necesario
+                # (Aunque yield_per mantiene la sesión activa, commit es seguro aquí)
+                db.commit()
 
-        # Procesar Inglés
-        if reviews_en:
-            print(f"\n[EN] Processing {len(reviews_en)} English reviews...")
-            analyzer_en = get_analyzer('en')
-            texts = [r.full_review_processed for r in reviews_en]
-            preds = predict_in_batches(analyzer_en, texts, 'en')
-            
-            for r, p in zip(reviews_en, preds):
-                r.sentiment_label = p.output
-                r.sentiment_score_pos = p.probas.get('POS', 0.0)
-                r.sentiment_score_neg = p.probas.get('NEG', 0.0)
-                r.sentiment_score_neu = p.probas.get('NEU', 0.0)
-
-        # --- SAVE ---
-        print("[INFO] Saving results to Database...")
-        db.commit()
         print("[INFO] Done! Database updated.")
 
     except Exception as e:
@@ -166,6 +133,38 @@ def main():
         db.rollback()
     finally:
         db.close()
+
+def _process_inference_batch(reviews_batch):
+    """
+    Helper function to process a small batch of reviews for inference.
+    """
+    reviews_es = [r for r in reviews_batch if r.language == 'es']
+    reviews_en = [r for r in reviews_batch if r.language == 'en']
+
+    # Procesar Español
+    if reviews_es:
+        analyzer_es = get_analyzer('es')
+        texts = [r.full_review_processed for r in reviews_es]
+        # Ya estamos en un lote pequeño, así que llamamos predict directamente o usamos predict_in_batches con size total
+        preds = analyzer_es.predict(texts)
+        
+        for r, p in zip(reviews_es, preds):
+            r.sentiment_label = p.output
+            r.sentiment_score_pos = p.probas.get('POS', 0.0)
+            r.sentiment_score_neg = p.probas.get('NEG', 0.0)
+            r.sentiment_score_neu = p.probas.get('NEU', 0.0)
+
+    # Procesar Inglés
+    if reviews_en:
+        analyzer_en = get_analyzer('en')
+        texts = [r.full_review_processed for r in reviews_en]
+        preds = analyzer_en.predict(texts)
+        
+        for r, p in zip(reviews_en, preds):
+            r.sentiment_label = p.output
+            r.sentiment_score_pos = p.probas.get('POS', 0.0)
+            r.sentiment_score_neg = p.probas.get('NEG', 0.0)
+            r.sentiment_score_neu = p.probas.get('NEU', 0.0)
 
 if __name__ == "__main__":
     main()

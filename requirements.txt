@@ -7,3 +7,4 @@ fake_useragent
 tenacity
 torch
 tqdm
+fasttext
