@@ -11,7 +11,8 @@ import plotly.express as px
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import re
-import sqlite3
+import re
+from core.database import engine
 from utils.cleaning import fix_score_value
 
 # Importar stopwords desde el módulo de utilidades
@@ -49,9 +50,9 @@ def load_data():
     df = pd.DataFrame() # Initialize df
     try:
         # Intentar cargar desde DB
-        conn = sqlite3.connect(config.DATABASE_URL.replace("sqlite:///", ""))
-        df = pd.read_sql("SELECT * FROM reviews", conn)
-        conn.close()
+        # Intentar cargar desde DB usando el engine compartido
+        with engine.connect() as conn:
+            df = pd.read_sql("SELECT * FROM reviews", conn)
         
         if df.empty:
             st.warning("[WARN] La base de datos está vacía. Intentando cargar CSV de respaldo...")
