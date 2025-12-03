@@ -19,7 +19,7 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
     Hilo dedicado a escuchar la cola y escribir en el CSV y DB.
     Termina cuando recibe None.
     """
-    review_headers = ["hotel_name", "hotel_url", "title", "score", "positive", "negative", "date"]
+    review_headers = config.REVIEW_CSV_HEADERS
     file_exists = os.path.isfile(filename)
     
     # Abrimos el archivo en modo append, pero escribiremos solo lo que se guarde en DB

@@ -30,7 +30,8 @@ BATCH_SIZE = 32
 
 # Dashboard / Cleaning Settings
 MONTH_TRANSLATIONS = {
-    "enero": "January", "febrero": "February", "marzo": "March", "abril": "April",
-    "mayo": "May", "junio": "June", "julio": "July", "agosto": "August",
     "septiembre": "September", "octubre": "October", "noviembre": "November", "diciembre": "December"
 }
+
+# CSV Headers
+REVIEW_CSV_HEADERS = ["hotel_name", "hotel_url", "title", "score", "positive", "negative", "date"]
