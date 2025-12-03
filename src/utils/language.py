@@ -1,6 +1,7 @@
-import os
 import fasttext
-import config
+import os
+from langdetect import detect, LangDetectException
+from src import config
 
 # Suprimir alertas de fasttext
 fasttext.FastText.eprint = lambda x: None

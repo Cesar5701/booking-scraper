@@ -6,10 +6,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException
 
-from booking_selectors import HotelPage as HotelPageSelectors, Reviews
-from pages.reviews_modal import ReviewsModal
+from src.booking_selectors import HotelPage as HotelPageSelectors, Reviews
+from src.pages.reviews_modal import ReviewsModal
 
-from pages.hotel_info_extractor import HotelInfoExtractor
+from src.pages.hotel_info_extractor import HotelInfoExtractor
 
 import re
 
@@ -63,13 +63,13 @@ class HotelPage:
         """Intenta cerrar el popup de Google One Tap si existe."""
         try:
             # Buscar iframes que puedan ser el de Google
-            iframes = self.driver.find_elements(By.CSS_SELECTOR, "iframe[id*='credential_picker']")
+            iframes = self.driver.find_elements(By.CSS_SELECTOR, HotelPageSelectors.GOOGLE_ONE_TAP_IFRAME)
             for iframe in iframes:
                 try:
                     self.driver.switch_to.frame(iframe)
                     # Intentar cerrar. El selector del botón de cierre puede variar, probamos uno genérico o por ID
                     close_btn = WebDriverWait(self.driver, 1).until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "#close"))
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, HotelPageSelectors.GOOGLE_ONE_TAP_CLOSE))
                     )
                     self.driver.execute_script("arguments[0].click();", close_btn)
                     logging.info("      [POPUP] Google One Tap cerrado.")

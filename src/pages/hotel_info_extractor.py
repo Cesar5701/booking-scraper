@@ -2,7 +2,7 @@ import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from booking_selectors import HotelPage as HotelPageSelectors
+from src.booking_selectors import HotelPage as HotelPageSelectors
 
 class HotelInfoExtractor:
     """

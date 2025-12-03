@@ -1,13 +1,21 @@
 import logging
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from fake_useragent import UserAgent
+import os
 
-import config
+from src import config
 
-def initialize_driver():
+def get_driver_path():
+    """
+    Instala/Verifica el driver una sola vez y retorna la ruta del ejecutable.
+    """
+    logging.info("🔧 Verificando ChromeDriver...")
+    return ChromeDriverManager().install()
+
+def initialize_driver(executable_path: str = None):
     """
     Inicializa Chrome con opciones anti-detección, idioma español y rotación de User-Agent.
     """
@@ -49,6 +57,11 @@ def initialize_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     
-    service = Service(ChromeDriverManager().install())
+    # Usar el path proporcionado o instalar si no se provee (fallback)
+    if executable_path:
+        service = Service(executable_path)
+    else:
+        service = Service(ChromeDriverManager().install())
+        
     driver = webdriver.Chrome(service=service, options=options)
     return driver

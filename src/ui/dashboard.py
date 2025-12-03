@@ -1,24 +1,24 @@
-import streamlit as st
-import sys
 import os
+import sys
 
-# Asegurar que el directorio actual (src) esté en el path para imports
 # Asegurar que el directorio raíz del código fuente (src) esté en el path
 current_dir = os.path.dirname(os.path.abspath(__file__)) # src/ui
 src_dir = os.path.dirname(current_dir) # src
 if src_dir not in sys.path:
     sys.path.append(src_dir)
+
+import re
+import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
+import streamlit as st
 from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-import re
-import re
-from core.database import engine
-from utils.cleaning import fix_score_value
+import dateparser
 
-# Importar stopwords desde el módulo de utilidades
-from utils.stopwords import get_stopwords
+from src import config
+from src.core.database import engine
+from src.utils.cleaning import fix_score_value
+from src.utils.stopwords import get_stopwords
 
 FINAL_STOPWORDS = get_stopwords()
 

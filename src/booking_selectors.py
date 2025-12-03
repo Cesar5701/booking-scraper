@@ -27,6 +27,10 @@ class HotelPage:
     # Popups
     LOGIN_POPUP_CLOSE = 'button[aria-label*="Dismiss"], button[aria-label*="Ignorar"], button[aria-label*="Cerrar"]'
     
+    # Google One Tap
+    GOOGLE_ONE_TAP_IFRAME = "iframe[id*='credential_picker']"
+    GOOGLE_ONE_TAP_CLOSE = "#close"
+    
     # Estrategias para abrir la pestaña de reseñas (Tuplas By, Selector)
     OPEN_REVIEWS_STRATEGIES = [
         (By.CSS_SELECTOR, '[data-testid="review-score-link"]'),

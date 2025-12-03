@@ -6,9 +6,25 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
-from booking_selectors import Reviews
-from utils.cleaning import extract_score_from_text
+from src.booking_selectors import Reviews
+from src.utils.cleaning import extract_score_from_text
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+
+# Importar TypedDict desde pipeline (o moverlo a models/types si fuera mejor, pero por ahora aquí)
+# Para evitar circular imports, definimos ReviewData aquí también o usamos Dict por ahora con comentario
+# Lo ideal es tener un types.py, pero para no crear más archivos, lo definiremos aquí o usaremos Dict
+# Dado que pipeline importa pages, pages no debería importar pipeline.
+# Usaremos Dict con comentario de tipo o duplicaremos la definición simple.
+from typing import TypedDict
+
+class ReviewData(TypedDict):
+    hotel_name: str
+    hotel_url: str
+    title: str
+    score: str
+    positive: str
+    negative: str
+    date: str
 
 class ReviewsModal:
     """
@@ -25,39 +41,38 @@ class ReviewsModal:
         except NoSuchElementException:
             return ""
 
-    @retry(retry=retry_if_exception_type(StaleElementReferenceException), stop=stop_after_attempt(3), wait=wait_fixed(0.5))
-    def _extract_review_at_index(self, index: int) -> Dict:
+    def _extract_review_data(self, review_element) -> ReviewData:
         """
-        Extrae datos de una reseña por índice, reintentando si ocurre StaleElementReferenceException.
-        Re-busca la lista de elementos en cada intento para asegurar frescura.
+        Extrae datos de un elemento de reseña individual.
         """
-        reviews = self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM)
-        if index >= len(reviews):
-            return {}
+        try:
+            title = self._get_safe_text(review_element, Reviews.TITLE)
+            raw_score = self._get_safe_text(review_element, Reviews.SCORE)
+            score = extract_score_from_text(raw_score)
             
-        review = reviews[index]
-        
-        title = self._get_safe_text(review, Reviews.TITLE)
-        raw_score = self._get_safe_text(review, Reviews.SCORE)
-        score = extract_score_from_text(raw_score)
-        
-        pos = self._get_safe_text(review, Reviews.POSITIVE)
-        neg = self._get_safe_text(review, Reviews.NEGATIVE)
-        
-        if not pos and not neg:
-            body = self._get_safe_text(review, Reviews.BODY_FALLBACK)
-            if body: pos = body
+            pos = self._get_safe_text(review_element, Reviews.POSITIVE)
+            neg = self._get_safe_text(review_element, Reviews.NEGATIVE)
+            
+            if not pos and not neg:
+                body = self._get_safe_text(review_element, Reviews.BODY_FALLBACK)
+                if body: pos = body
 
-        date = self._get_safe_text(review, Reviews.DATE)
+            date = self._get_safe_text(review_element, Reviews.DATE)
 
-        return {
-            "hotel_name": self.hotel_name, "hotel_url": self.hotel_url, 
-            "title": title, "score": score,
-            "positive": pos, "negative": neg, 
-            "date": date
-        }
+            return {
+                "hotel_name": self.hotel_name, "hotel_url": self.hotel_url, 
+                "title": title, "score": score,
+                "positive": pos, "negative": neg, 
+                "date": date
+            }
+        except StaleElementReferenceException:
+            logging.warning("Stale element encountered while extracting review data.")
+            return {} # type: ignore
+        except Exception as e:
+            logging.warning(f"Error extracting review data: {e}")
+            return {} # type: ignore
 
-    def extract_current_page(self) -> List[Dict]:
+    def extract_current_page(self) -> List[ReviewData]:
         """Extrae las reseñas visibles en la página actual del modal."""
         try:
             # Esperar presencia inicial
@@ -68,18 +83,14 @@ class ReviewsModal:
             logging.info("Tiempo de espera agotado buscando reseñas en esta página (posible fin).")
             return []
 
-        # Obtener conteo inicial
-        count = len(self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM))
+        # Obtener elementos y procesar iterando directamente
+        review_elements = self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM)
         page_reviews = []
         
-        for i in range(count):
-            try:
-                data = self._extract_review_at_index(i)
-                if data and data not in page_reviews:
-                    page_reviews.append(data)
-            except Exception as e:
-                logging.warning(f"Error extrayendo reseña {i}: {e}")
-                continue
+        for i, element in enumerate(review_elements):
+            data = self._extract_review_data(element)
+            if data and data not in page_reviews:
+                page_reviews.append(data)
                 
         return page_reviews
 
@@ -110,7 +121,7 @@ class ReviewsModal:
             logging.error(f"Error al intentar cambiar de página: {e}")
             return False
 
-    def extract_all_reviews(self, max_reviews: int = 1000) -> List[Dict]:
+    def extract_all_reviews(self, max_reviews: int = 1000) -> List[ReviewData]:
         """
         Extrae todas las reseñas disponibles paginando hasta alcanzar max_reviews.
         """

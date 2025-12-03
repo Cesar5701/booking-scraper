@@ -4,11 +4,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Add src to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-
-from core.database import Base
-from models import Review
+from src.core.database import Base
+from src.models import Review
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
@@ -39,7 +36,7 @@ class TestDatabase(unittest.TestCase):
         # Query back
         saved_review = self.session.query(Review).first()
         self.assertEqual(saved_review.hotel_name, "Test Hotel")
-        self.assertEqual(saved_review.score, "10")
+        self.assertEqual(saved_review.score, 10.0)
         self.assertEqual(saved_review.review_hash, "abc123hash")
 
     def test_duplicate_hash(self):

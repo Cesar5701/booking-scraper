@@ -7,8 +7,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
-import config
-from booking_selectors import SearchResults
+from src import config
+from src.booking_selectors import SearchResults
 
 class SearchPage:
     """

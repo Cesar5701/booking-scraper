@@ -29,49 +29,49 @@ booking-scraper/
 └── requirements.txt        # Dependencias
 ```
 
-## Instalación
-
-1.  Clonar el repositorio.
-2.  Crear y activar un entorno virtual:
-    ```bash
-    python -m venv scraper_env
-    source scraper_env/bin/activate
-    ```
-3.  Instalar dependencias:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-## Uso
-
-### Scraping
-Para iniciar el scraper:
-```bash
-PYTHONPATH=src python src/scraper.py
-```
-El scraper buscará hoteles definidos en la configuración, extraerá sus reseñas y las guardará en `data/reviews.db` y `data/tlaxcala_hotel_reviews_full.csv`.
-
-### Inferencia (Análisis de Sentimientos)
-Para ejecutar el análisis de sentimientos sobre las reseñas guardadas:
-```bash
-PYTHONPATH=src python src/inference.py
-```
-
-### Limpieza de Datos
-Para eliminar duplicados del CSV (si fuera necesario):
-```bash
-PYTHONPATH=src python src/clean_data.py
-```
-
-## Configuración
-La configuración global se encuentra en `src/config.py`. Aquí puedes ajustar:
-*   URLs de búsqueda.
-*   Rutas de archivos de salida.
-*   Configuración del navegador (Headless, User-Agent).
-*   Parámetros de concurrencia (Número de hilos).
-
-## Tests
-Para ejecutar los tests:
-```bash
-PYTHONPATH=src pytest tests/
-```
+32: ## Instalación
+33: 
+34: 1.  Clonar el repositorio.
+35: 2.  Crear y activar un entorno virtual:
+36:     ```bash
+37:     python3.11 -m venv scraper_venv
+38:     source scraper_venv/bin/activate
+39:     ```
+40: 3.  Instalar dependencias:
+41:     ```bash
+42:     pip install -r requirements.txt
+43:     ```
+44: 
+45: ## Uso
+46: 
+47: ### Scraping
+48: Para iniciar el scraper:
+49: ```bash
+50: python -m src.scraper
+51: ```
+52: El scraper buscará hoteles definidos en la configuración, extraerá sus reseñas y las guardará en `data/reviews.db` y `data/tlaxcala_hotel_reviews_full.csv`.
+53: 
+54: ### Inferencia (Análisis de Sentimientos)
+55: Para ejecutar el análisis de sentimientos sobre las reseñas guardadas:
+56: ```bash
+57: python -m src.inference
+58: ```
+59: 
+60: ### Dashboard
+61: Para visualizar los datos:
+62: ```bash
+63: streamlit run src/ui/dashboard.py
+64: ```
+65: 
+66: ## Configuración
+67: La configuración global se encuentra en `src/config.py`. Aquí puedes ajustar:
+68: *   URLs de búsqueda.
+69: *   Rutas de archivos de salida.
+70: *   Configuración del navegador (Headless, User-Agent).
+71: *   Parámetros de concurrencia (Número de hilos).
+72: 
+73: ## Tests
+74: Para ejecutar los tests:
+75: ```bash
+76: pytest tests/
+77: ```

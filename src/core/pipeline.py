@@ -1,17 +1,23 @@
 import queue
 import threading
 import logging
-import csv
-import os
-import hashlib
-from typing import List, Dict, Optional, Set
-from sqlalchemy.exc import IntegrityError
+from typing import List, Dict, Optional, Set, TypedDict
 
-import config
-from core.database import SessionLocal
-from models import Review
-from pages.hotel_page import HotelPage
-from core.driver import initialize_driver
+from src import config
+from src.core.database import SessionLocal
+from src.models import Review
+from src.pages.hotel_page import HotelPage
+from src.core.driver import initialize_driver, get_driver_path
+from src.utils.cleaning import fix_score_value
+
+class ReviewData(TypedDict):
+    hotel_name: str
+    hotel_url: str
+    title: str
+    score: str
+    positive: str
+    negative: str
+    date: str
 
 def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
     """
@@ -52,11 +58,15 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
                             unique_str = f"{item.get('hotel_url')}{item.get('date')}{item.get('title')}{item.get('positive')}{item.get('negative')}"
                             review_hash = hashlib.md5(unique_str.encode('utf-8')).hexdigest()
                             
+                            # Limpiar score antes de guardar
+                            raw_score = item.get("score")
+                            clean_score = fix_score_value(raw_score)
+
                             review = Review(
                                 hotel_name=item.get("hotel_name"),
                                 hotel_url=item.get("hotel_url"),
                                 title=item.get("title"),
-                                score=item.get("score"),
+                                score=clean_score,
                                 positive=item.get("positive"),
                                 negative=item.get("negative"),
                                 date=item.get("date"),
@@ -90,7 +100,7 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
         finally:
             db.close()
 
-def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -> None:
+def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int, driver_path: str) -> None:
     """
     Función ejecutada por cada hilo worker para procesar una lista de URLs de hoteles.
     
@@ -98,8 +108,9 @@ def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -
         urls (List[str]): Lista de URLs de hoteles asignada a este worker.
         result_queue (queue.Queue): Cola compartida para enviar los resultados (reseñas).
         worker_id (int): Identificador numérico del worker para logging.
+        driver_path (str): Ruta al ejecutable del driver.
     """
-    driver = initialize_driver()
+    driver = initialize_driver(executable_path=driver_path)
     hotel_page = HotelPage(driver)
     
     logging.info(f"Worker {worker_id} iniciado. Procesando {len(urls)} URLs.")
@@ -165,10 +176,13 @@ def run_pipeline(hotel_urls: List[str], processed_urls: Set[str] = set()) -> Non
     chunk_size = (len(urls_to_process) // config.MAX_WORKERS) + 1
     chunks = [urls_to_process[i:i + chunk_size] for i in range(0, len(urls_to_process), chunk_size)]
     
+    # Obtener ruta del driver UNA VEZ
+    driver_path = get_driver_path()
+
     threads = []
     for i, chunk in enumerate(chunks):
         if not chunk: continue
-        t = threading.Thread(target=worker_process, args=(chunk, result_queue, i+1))
+        t = threading.Thread(target=worker_process, args=(chunk, result_queue, i+1, driver_path))
         t.start()
         threads.append(t)
         
