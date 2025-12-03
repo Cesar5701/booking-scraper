@@ -3,6 +3,7 @@ from pysentimiento import create_analyzer
 import torch
 from tqdm import tqdm
 import numpy as np
+from functools import lru_cache
 
 import config
 from core.database import SessionLocal, engine, Base
@@ -12,6 +13,15 @@ from utils.language import detect_language_safe
 
 # Crear tablas si no existen (útil si se borró la DB)
 Base.metadata.create_all(bind=engine)
+
+@lru_cache(maxsize=2)
+def get_analyzer(lang: str):
+    """
+    Carga y cachea el modelo de análisis de sentimientos para un idioma dado.
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[INFO] Loading analyzer for '{lang}' on {device}...")
+    return create_analyzer(task="sentiment", lang=lang)
 
 def predict_in_batches(analyzer, texts, lang_code, batch_size=config.BATCH_SIZE):
     """
@@ -25,9 +35,10 @@ def predict_in_batches(analyzer, texts, lang_code, batch_size=config.BATCH_SIZE)
         results.extend(batch_predictions)
     return results
 
-def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
+def predict_sentiment_multilingual(df):
     """
     Aplica el modelo correcto según el idioma de la fila usando procesamiento por lotes.
+    Carga los modelos automáticamente usando get_analyzer.
     """
     # Inicializar columnas de resultados con valores nulos/vacíos
     df['sentiment_label'] = None
@@ -41,6 +52,7 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
     df_en = df[mask_en]
     
     if not df_en.empty:
+        analyzer_en = get_analyzer('en')
         texts_en = df_en['full_review_processed'].astype(str).tolist()
         preds_en = predict_in_batches(analyzer_en, texts_en, 'en')
         
@@ -53,11 +65,11 @@ def predict_sentiment_multilingual(df, analyzer_es, analyzer_en):
     # --- PROCESAR ESPAÑOL Y OTROS (FALLBACK) ---
     print("\n[ES] Processing Spanish/Other reviews...")
     # Todo lo que no sea 'en' se procesa con el modelo en español
-    # REFACTOR: Usamos explícitamente 'es' para evitar errores si se añaden más idiomas
     mask_es = df['language'] == 'es'
     df_es = df[mask_es]
     
     if not df_es.empty:
+        analyzer_es = get_analyzer('es')
         texts_es = df_es['full_review_processed'].astype(str).tolist()
         preds_es = predict_in_batches(analyzer_es, texts_es, 'es')
         
@@ -75,7 +87,6 @@ def main():
     
     try:
         # 1. Leer reseñas de la DB que no tengan sentimiento calculado
-        # Opcional: Procesar todas. Por ahora, procesamos todas.
         reviews = db.query(Review).all()
         
         if not reviews:
@@ -83,9 +94,6 @@ def main():
             return
 
         print(f"[INFO] Found {len(reviews)} reviews in DB.")
-        
-        # Convertir a DataFrame para facilitar el manejo (aunque podríamos iterar objetos)
-        # Usamos objetos para poder actualizar fácilmente
         
         # --- PREPROCESSING ---
         print("[INFO] Preprocessing and Detecting Language...")
@@ -110,19 +118,22 @@ def main():
         print(f"[INFO] Valid reviews for inference (ES/EN): {len(valid_reviews)}")
 
         # --- INFERENCE ---
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"[INFO] Initializing analyzers on: {device}")
+        # Separar por idioma para procesamiento eficiente (aunque predict_sentiment_multilingual ya lo hace,
+        # aquí estamos trabajando con objetos ORM, no DataFrame directamente, pero la función espera DataFrame?
+        # Revisando el código original: predict_sentiment_multilingual tomaba DF, pero main usaba listas y bucles manuales.
+        # Voy a adaptar main para usar la lógica de predict_sentiment_multilingual si convierto a DF, 
+        # O mantener la lógica de main pero usando get_analyzer.
         
-        analyzer_es = create_analyzer(task="sentiment", lang="es")
-        analyzer_en = create_analyzer(task="sentiment", lang="en")
-
-        # Separar por idioma
+        # El código original de main NO llamaba a predict_sentiment_multilingual. Tenía la lógica duplicada o similar.
+        # Voy a refactorizar main para que sea más limpio y use get_analyzer directamente.
+        
         reviews_es = [r for r in valid_reviews if r.language == 'es']
         reviews_en = [r for r in valid_reviews if r.language == 'en']
 
         # Procesar Español
         if reviews_es:
             print(f"\n[ES] Processing {len(reviews_es)} Spanish reviews...")
+            analyzer_es = get_analyzer('es')
             texts = [r.full_review_processed for r in reviews_es]
             preds = predict_in_batches(analyzer_es, texts, 'es')
             
@@ -135,6 +146,7 @@ def main():
         # Procesar Inglés
         if reviews_en:
             print(f"\n[EN] Processing {len(reviews_en)} English reviews...")
+            analyzer_en = get_analyzer('en')
             texts = [r.full_review_processed for r in reviews_en]
             preds = predict_in_batches(analyzer_en, texts, 'en')
             

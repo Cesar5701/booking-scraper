@@ -35,16 +35,11 @@ def get_all_hotel_links(driver: webdriver.Chrome, url: str) -> List[str]:
     search_page.scroll_and_load_all()
     return search_page.get_hotel_links()
 
+from utils.logging_config import setup_logging
+
 def main():
     # Configurar Logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler("scraper.log"),
-            logging.StreamHandler()
-        ]
-    )
+    setup_logging()
 
     # Lógica de Reanudación
     processed_urls = set()
