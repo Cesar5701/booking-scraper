@@ -17,7 +17,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from typing import List, Dict, Generator, Optional
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException, ElementClickInterceptedException
 import hashlib
 import math
 from sqlalchemy.exc import IntegrityError
@@ -244,21 +244,21 @@ def get_hotel_name_robust(driver: webdriver.Chrome) -> str:
                     if item.get("@type") in ["Hotel", "LodgingBusiness", "Resort", "Hostel"]:
                         name = item.get("name")
                         if name: return name
-    except Exception: 
+    except (NoSuchElementException, json.JSONDecodeError): 
         pass # JSON-LD es opcional, no es crítico loguear error aquí
 
     # ESTRATEGIA 2: Meta Tags OpenGraph
     try:
         og_title = driver.find_element(*HotelPage.NAME_OG_TITLE).get_attribute("content")
         if og_title: return og_title.split(",")[0].strip()
-    except Exception: 
+    except NoSuchElementException: 
         pass
 
     # ESTRATEGIA 3: ID Clásico
     try:
         id_name = driver.find_element(*HotelPage.NAME_ID).text.strip()
         if id_name: return id_name
-    except Exception: 
+    except NoSuchElementException: 
         pass
 
     # ESTRATEGIA 4: Selectores Visuales (Fallback)
@@ -302,7 +302,7 @@ def get_total_review_count(driver: webdriver.Chrome) -> int:
                 num_str = match.group(1).replace('.', '').replace(',', '')
                 return int(num_str)
 
-    except Exception:
+    except (NoSuchElementException, ValueError):
         pass
     
     return 0
@@ -345,7 +345,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
         WebDriverWait(driver, 3).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, HotelPage.LOGIN_POPUP_CLOSE))
         ).click()
-    except Exception: pass
+    except (TimeoutException, NoSuchElementException): pass
 
     # 3. ABRIR PESTAÑA DE RESEÑAS
     print("      -> Intentando abrir panel de reseñas...")
@@ -367,7 +367,7 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
             reviews_opened = True
             print(f"      [OK] Panel abierto usando: {selector}")
             break
-        except Exception:
+        except (TimeoutException, ElementClickInterceptedException):
             continue
 
     if not reviews_opened:

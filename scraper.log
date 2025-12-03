@@ -1223,3 +1223,28 @@
 2025-12-02 20:46:37,428 - INFO - [WORKER] Worker 1: Finalizando. Procesados: 1
 2025-12-02 20:46:37,489 - INFO - 
 [DONE] Proceso finalizado.
+2025-12-02 20:48:51,208 - INFO - [RESUME] Lógica de reanudación activada. 187 hoteles ya procesados.
+2025-12-02 20:48:51,208 - INFO - --- FASE 1: BÚSQUEDA DE HOTELES ---
+2025-12-02 20:48:51,209 - INFO - 🚀 Iniciando WebDriver (Core)...
+2025-12-02 20:48:51,238 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Mobile/15E148 Safari/604.1
+2025-12-02 20:48:51,239 - INFO - ====== WebDriver manager ======
+2025-12-02 20:48:51,309 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 20:48:51,438 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 20:48:51,569 - INFO - Driver [/home/cesar/.wdm/drivers/chromedriver/linux64/142.0.7444.175/chromedriver-linux64/chromedriver] found in cache
+2025-12-02 20:49:14,369 - INFO -    [WAIT] No se detectaron cambios. Intento 1/3
+2025-12-02 20:49:19,525 - INFO -    [WAIT] No se detectaron cambios. Intento 2/3
+2025-12-02 20:49:24,684 - INFO -    [WAIT] No se detectaron cambios. Intento 3/3
+2025-12-02 20:49:25,631 - INFO - [TEST MODE] Procesando solo los primeros 1 hoteles.
+2025-12-02 20:49:25,631 - INFO - --- FASE 2: EXTRACCIÓN PARALELA (1 Workers) ---
+2025-12-02 20:49:25,632 - INFO - [WORKER] Worker 1: Iniciando con 1 hoteles.
+2025-12-02 20:49:25,632 - INFO - 🚀 Iniciando WebDriver (Core)...
+2025-12-02 20:49:25,664 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36
+2025-12-02 20:49:25,664 - INFO - ====== WebDriver manager ======
+2025-12-02 20:49:25,739 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 20:49:25,866 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-02 20:49:25,993 - INFO - Driver [/home/cesar/.wdm/drivers/chromedriver/linux64/142.0.7444.175/chromedriver-linux64/chromedriver] found in cache
+2025-12-02 20:49:27,172 - INFO - [WORKER] Worker 1: Procesando https://www.booking.com/hotel/mx/hb-express.es.html?aid=304142&label=gen173nr-10CAQoggJCInNlYXJjaF90bGF4Y2FsYSwgdGxheGNhbGEsIG3DqXhpY29IClgEaKABiAECmAEzuAEHyAEN2AED6AEB-AEBiAIBqAIBuAKWyr7JBsACAdICJDdhMjJhYTViLWNhODUtNDNlNS05MDEwLWY1MWQ4ZGYwNzFmONgCAeACAQ&ucfs=1&arphpl=1&group_adults=2&req_adults=2&no_rooms=1&group_children=0&req_children=0&hpos=1&hapos=1&sr_order=popularity&srpvid=b7fe13cb99e205a3&srepoch=1764730145
+2025-12-02 20:49:35,705 - INFO -    [SAVED] 25 reseñas procesadas (25 nuevas en DB).
+2025-12-02 20:49:40,969 - INFO - [WORKER] Worker 1: Finalizando. Procesados: 1
+2025-12-02 20:49:41,030 - INFO - 
+[DONE] Proceso finalizado.
