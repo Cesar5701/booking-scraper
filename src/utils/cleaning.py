@@ -44,3 +44,19 @@ def fix_score_value(val: Union[str, float, int, None]) -> Optional[float]:
             return num
         except ValueError: return None
     return None
+
+def extract_score_from_text(raw_score: str) -> str:
+    """
+    Extrae el primer número válido de una cadena de texto (ej. 'Score: 8.5' -> '8.5').
+    Usa regex para ser robusto ante texto basura.
+    """
+    if not isinstance(raw_score, str):
+        return "0"
+        
+    # Reemplazar comas por puntos para estandarizar
+    cleaned = raw_score.replace(',', '.')
+    
+    match = re.search(r'(\d+[\.,]?\d*)', cleaned)
+    if match:
+        return match.group(1)
+    return "0"

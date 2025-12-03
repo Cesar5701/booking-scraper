@@ -27,6 +27,7 @@ from core.driver import initialize_driver
 from core.database import SessionLocal, engine, Base
 from models import Review
 from booking_selectors import SearchResults, HotelPage, Reviews
+from utils.cleaning import extract_score_from_text
 
 # Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
@@ -402,14 +403,8 @@ def extract_reviews_from_hotel(driver: webdriver.Chrome, hotel_url: str) -> Gene
                 # Score
                 raw_score = _get_safe_text(review, Reviews.SCORE)
 
-                # Limpiar el score: usar regex para extraer el primer número válido (ej. 8.5, 10)
-                # Esto evita problemas como "1010" si el texto es "10 10" o similar
-                import re
-                score_match = re.search(r'(\d+[\.,]?\d*)', raw_score.replace(',', '.'))
-                if score_match:
-                    score = score_match.group(1)
-                else:
-                    score = "0"
+                # Limpiar el score usando función centralizada
+                score = extract_score_from_text(raw_score)
                 
                 # Texto Positivo/Negativo
                 pos = _get_safe_text(review, Reviews.POSITIVE)
