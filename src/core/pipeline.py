@@ -28,60 +28,62 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str):
         if not file_exists:
             writer.writeheader()
             
-        while True:
-            batch = result_queue.get()
-            if batch is None: # Poison pill
-                break
-            
-            try:
-                # 1. Intentar guardar en DB primero para filtrar duplicados
-                db = SessionLocal()
-                saved_count = 0
-                new_reviews_for_csv = []
-
+        # Instanciar sesión de DB una vez para reutilizar conexión
+        db = SessionLocal()
+        try:
+            while True:
+                batch = result_queue.get()
+                if batch is None: # Poison pill
+                    break
+                
                 try:
-                    for item in batch:
-                        # Generar Hash Único
-                        unique_str = f"{item.get('hotel_url')}{item.get('date')}{item.get('title')}{item.get('positive')}{item.get('negative')}"
-                        review_hash = hashlib.md5(unique_str.encode('utf-8')).hexdigest()
-                        
-                        review = Review(
-                            hotel_name=item.get("hotel_name"),
-                            hotel_url=item.get("hotel_url"),
-                            title=item.get("title"),
-                            score=item.get("score"),
-                            positive=item.get("positive"),
-                            negative=item.get("negative"),
-                            date=item.get("date"),
-                            review_hash=review_hash
-                        )
-                        try:
-                            db.add(review)
-                            db.commit()
-                            # Si llegamos aquí, se guardó correctamente (no era duplicado)
-                            saved_count += 1
-                            new_reviews_for_csv.append(item)
-                        except IntegrityError:
-                            db.rollback()
-                            # Duplicado, lo ignoramos
-                            pass
+                    # 1. Intentar guardar en DB primero para filtrar duplicados
+                    saved_count = 0
+                    new_reviews_for_csv = []
+
+                    try:
+                        for item in batch:
+                            # Generar Hash Único
+                            unique_str = f"{item.get('hotel_url')}{item.get('date')}{item.get('title')}{item.get('positive')}{item.get('negative')}"
+                            review_hash = hashlib.md5(unique_str.encode('utf-8')).hexdigest()
                             
-                except Exception as db_e:
-                    logging.error(f"Error guardando en DB: {db_e}")
-                    db.rollback()
+                            review = Review(
+                                hotel_name=item.get("hotel_name"),
+                                hotel_url=item.get("hotel_url"),
+                                title=item.get("title"),
+                                score=item.get("score"),
+                                positive=item.get("positive"),
+                                negative=item.get("negative"),
+                                date=item.get("date"),
+                                review_hash=review_hash
+                            )
+                            try:
+                                db.add(review)
+                                db.commit()
+                                # Si llegamos aquí, se guardó correctamente (no era duplicado)
+                                saved_count += 1
+                                new_reviews_for_csv.append(item)
+                            except IntegrityError:
+                                db.rollback()
+                                # Duplicado, lo ignoramos
+                                pass
+                                
+                    except Exception as db_e:
+                        logging.error(f"Error guardando en DB: {db_e}")
+                        db.rollback()
+
+                    # 2. Escribir en CSV solo los nuevos
+                    if new_reviews_for_csv:
+                        writer.writerows(new_reviews_for_csv)
+                        f.flush()
+
+                    logging.info(f"   [SAVED] Procesados {len(batch)}. Nuevos en DB/CSV: {saved_count}.")
+                except Exception as e:
+                    logging.error(f"Error escribiendo datos: {e}")
                 finally:
-                    db.close()
-
-                # 2. Escribir en CSV solo los nuevos
-                if new_reviews_for_csv:
-                    writer.writerows(new_reviews_for_csv)
-                    f.flush()
-
-                logging.info(f"   [SAVED] Procesados {len(batch)}. Nuevos en DB/CSV: {saved_count}.")
-            except Exception as e:
-                logging.error(f"Error escribiendo datos: {e}")
-            finally:
-                result_queue.task_done()
+                    result_queue.task_done()
+        finally:
+            db.close()
 
 def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -> None:
     """

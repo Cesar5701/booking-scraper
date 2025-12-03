@@ -1,6 +1,6 @@
 import pytest
 import math
-from src.utils.cleaning import clean_text_basic, fix_score_value, extract_score_from_text
+from utils.cleaning import clean_text_basic, fix_score_value, extract_score_from_text
 
 # --- Test clean_text_basic ---
 

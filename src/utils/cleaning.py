@@ -2,6 +2,11 @@ import re
 import pandas as pd
 from typing import Optional, Union
 
+# Compiled Regex Patterns
+RE_SPACES = re.compile(r'\s+')
+RE_SCORE_VAL = re.compile(r'(\d+(\.\d+)?)')
+RE_SCORE_TEXT = re.compile(r'(\d+[\.,]?\d*)')
+
 def clean_text_basic(text: Union[str, float, None]) -> str:
     """
     Realiza una limpieza básica de texto para preprocesamiento.
@@ -17,7 +22,7 @@ def clean_text_basic(text: Union[str, float, None]) -> str:
     # Convertir a minúsculas
     text = text.lower()
     # Eliminar espacios extra
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = RE_SPACES.sub(' ', text).strip()
     return text
 
 def fix_score_value(val: Union[str, float, int, None]) -> Optional[float]:
@@ -33,7 +38,7 @@ def fix_score_value(val: Union[str, float, int, None]) -> Optional[float]:
     """
     if pd.isna(val): return None
     s = str(val).replace(',', '.').strip()
-    match = re.search(r'(\d+(\.\d+)?)', s)
+    match = RE_SCORE_VAL.search(s)
     if match:
         try:
             num = float(match.group(1))
@@ -55,7 +60,7 @@ def extract_score_from_text(raw_score: str) -> str:
     # Reemplazar comas por puntos para estandarizar
     cleaned = raw_score.replace(',', '.')
     
-    match = re.search(r'(\d+[\.,]?\d*)', cleaned)
+    match = RE_SCORE_TEXT.search(cleaned)
     if match:
         return match.group(1)
     return "0"

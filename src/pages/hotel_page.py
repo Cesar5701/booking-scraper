@@ -11,6 +11,12 @@ from pages.reviews_modal import ReviewsModal
 
 from pages.hotel_info_extractor import HotelInfoExtractor
 
+import re
+
+# Compiled Regex Patterns
+RE_REVIEW_COUNT_PARENS = re.compile(r'\((\d+[\.,]?\d*)\)')
+RE_REVIEW_COUNT_SIMPLE = re.compile(r'(\d+[\.,]?\d*)')
+
 class HotelPage:
     """
     Page Object para la página de detalles del hotel.
@@ -37,8 +43,7 @@ class HotelPage:
             elements = driver.find_elements(By.CSS_SELECTOR, HotelPageSelectors.REVIEW_COUNT_LINKS)
             for elem in elements:
                 text = elem.text
-                import re
-                match = re.search(r'\((\d+[\.,]?\d*)\)', text)
+                match = RE_REVIEW_COUNT_PARENS.search(text)
                 if match:
                     num_str = match.group(1).replace('.', '').replace(',', '')
                     return int(num_str)
@@ -46,8 +51,7 @@ class HotelPage:
             count_elem = driver.find_element(By.CSS_SELECTOR, HotelPageSelectors.REVIEW_COUNT_SIDEBAR)
             if count_elem:
                  text = count_elem.text
-                 import re
-                 match = re.search(r'(\d+[\.,]?\d*)', text)
+                 match = RE_REVIEW_COUNT_SIMPLE.search(text)
                  if match:
                     num_str = match.group(1).replace('.', '').replace(',', '')
                     return int(num_str)
