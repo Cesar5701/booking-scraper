@@ -1,11 +1,13 @@
 import os
 import sys
 
-# Asegurar que el directorio raíz del código fuente (src) esté en el path
+# Asegurar que el directorio raíz del proyecto esté en el path
 current_dir = os.path.dirname(os.path.abspath(__file__)) # src/ui
 src_dir = os.path.dirname(current_dir) # src
-if src_dir not in sys.path:
-    sys.path.append(src_dir)
+project_root = os.path.dirname(src_dir) # booking-scraper
+
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
 import re
 import matplotlib.pyplot as plt
@@ -22,7 +24,8 @@ from src.utils.stopwords import get_stopwords
 
 FINAL_STOPWORDS = get_stopwords()
 
-import config
+
+
 
 # --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
 st.set_page_config(
@@ -33,8 +36,6 @@ st.set_page_config(
 
 # --- CARGA DE DATOS ---
 # Variables importadas de config.py
-
-import dateparser
 
 def clean_booking_date(date_str):
     if not isinstance(date_str, str) or not date_str.strip():

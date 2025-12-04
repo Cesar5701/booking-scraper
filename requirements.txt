@@ -8,3 +8,4 @@ tenacity
 torch
 tqdm
 fasttext
+numpy<2.0
