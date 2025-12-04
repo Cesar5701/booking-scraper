@@ -114,6 +114,24 @@ else:
     else:
         df_filtered = df
 
+    # Filtro de Fechas
+    if 'date' in df_filtered.columns and not df_filtered['date'].isnull().all():
+        min_date = df_filtered['date'].min().date()
+        max_date = df_filtered['date'].max().date()
+        
+        st.sidebar.subheader("Rango de Fechas")
+        date_range = st.sidebar.date_input(
+            "Selecciona rango",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date
+        )
+        
+        if len(date_range) == 2:
+            start_date, end_date = date_range
+            mask = (df_filtered['date'].dt.date >= start_date) & (df_filtered['date'].dt.date <= end_date)
+            df_filtered = df_filtered.loc[mask]
+
     # KPIs
     total_reviews = len(df_filtered)
     if total_reviews > 0:
@@ -130,7 +148,7 @@ else:
         st.subheader("Análisis Visual")
         
         # Pestañas para organizar mejor
-        tab1, tab2, tab3 = st.tabs(["Sentimientos", "Nube de Palabras", "Tendencias"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Sentimientos", "Nube de Palabras", "Tendencias", "Explorador de Datos"])
 
         with tab1:
             col_a, col_b = st.columns(2)
@@ -159,6 +177,20 @@ else:
                     st.plotly_chart(fig_bar, width="stretch")
                 else:
                     st.info("Selecciona 'Todos' para ver el ranking comparativo.")
+            
+            # --- Score vs Sentiment ---
+            st.markdown("#### Correlación: Score Usuario vs Sentimiento IA")
+            if 'compound_score' in df_filtered.columns and 'score' in df_filtered.columns:
+                fig_scatter = px.scatter(
+                    df_filtered, 
+                    x='score', 
+                    y='compound_score',
+                    color='sentiment_label' if 'sentiment_label' in df_filtered.columns else None,
+                    hover_data=['title', 'hotel_name'],
+                    title="Score (0-10) vs Compound Sentiment (-1 a 1)",
+                    color_discrete_map={'POS': '#28a745', 'NEU': '#ffc107', 'NEG': '#dc3545'}
+                )
+                st.plotly_chart(fig_scatter, width="stretch")
 
         with tab2:
             st.markdown("#### ¿De qué hablan los huéspedes?")
@@ -222,6 +254,15 @@ else:
             df_ts = df_filtered.copy().set_index('date')
             monthly = df_ts.resample('ME')['compound_score'].mean().dropna()
             if not monthly.empty:
-                st.plotly_chart(px.line(monthly, title="Sentimiento a lo largo del tiempo"), width="stretch")
+                st.plotly_chart(px.line(monthly, title="Sentimiento Promedio a lo largo del tiempo"), width="stretch")
+            
+            st.markdown("#### Volumen de Reseñas")
+            monthly_count = df_ts.resample('ME').size()
+            if not monthly_count.empty:
+                st.plotly_chart(px.bar(monthly_count, title="Cantidad de Reseñas por Mes"), width="stretch")
+
+        with tab4:
+            st.markdown("#### Explorador de Datos Crudos")
+            st.dataframe(df_filtered)
     else:
         st.warning("No hay reseñas para este filtro.")
