@@ -22,63 +22,7 @@ def get_analyzer(lang: str):
     print(f"[INFO] Loading analyzer for '{lang}' on {device}...")
     return create_analyzer(task="sentiment", lang=lang)
 
-def predict_in_batches(analyzer, texts, lang_code, batch_size=config.BATCH_SIZE):
-    """
-    Realiza predicciones en lotes para evitar sobrecarga de memoria y mejorar velocidad.
-    """
-    results = []
-    for i in tqdm(range(0, len(texts), batch_size), desc=f"Processing batches ({lang_code})"):
-        batch = texts[i:i + batch_size]
-        # pysentimiento acepta listas de strings
-        batch_predictions = analyzer.predict(batch)
-        results.extend(batch_predictions)
-    return results
 
-def predict_sentiment_multilingual(df):
-    """
-    Aplica el modelo correcto según el idioma de la fila usando procesamiento por lotes.
-    Carga los modelos automáticamente usando get_analyzer.
-    """
-    # Inicializar columnas de resultados con valores nulos/vacíos
-    df['sentiment_label'] = None
-    df['sentiment_score_pos'] = 0.0
-    df['sentiment_score_neg'] = 0.0
-    df['sentiment_score_neu'] = 0.0
-
-    # --- PROCESAR INGLÉS ---
-    print("\n[EN] Processing English reviews...")
-    mask_en = df['language'] == 'en'
-    df_en = df[mask_en]
-    
-    if not df_en.empty:
-        analyzer_en = get_analyzer('en')
-        texts_en = df_en['full_review_processed'].astype(str).tolist()
-        preds_en = predict_in_batches(analyzer_en, texts_en, 'en')
-        
-        # Asignar resultados usando el índice original
-        df.loc[mask_en, 'sentiment_label'] = [p.output for p in preds_en]
-        df.loc[mask_en, 'sentiment_score_pos'] = [p.probas.get('POS', 0) for p in preds_en]
-        df.loc[mask_en, 'sentiment_score_neg'] = [p.probas.get('NEG', 0) for p in preds_en]
-        df.loc[mask_en, 'sentiment_score_neu'] = [p.probas.get('NEU', 0) for p in preds_en]
-
-    # --- PROCESAR ESPAÑOL Y OTROS (FALLBACK) ---
-    print("\n[ES] Processing Spanish/Other reviews...")
-    # Todo lo que no sea 'en' se procesa con el modelo en español
-    mask_es = df['language'] == 'es'
-    df_es = df[mask_es]
-    
-    if not df_es.empty:
-        analyzer_es = get_analyzer('es')
-        texts_es = df_es['full_review_processed'].astype(str).tolist()
-        preds_es = predict_in_batches(analyzer_es, texts_es, 'es')
-        
-        # Asignar resultados
-        df.loc[mask_es, 'sentiment_label'] = [p.output for p in preds_es]
-        df.loc[mask_es, 'sentiment_score_pos'] = [p.probas.get('POS', 0) for p in preds_es]
-        df.loc[mask_es, 'sentiment_score_neg'] = [p.probas.get('NEG', 0) for p in preds_es]
-        df.loc[mask_es, 'sentiment_score_neu'] = [p.probas.get('NEU', 0) for p in preds_es]
-
-    return df
 
 def main():
     # Crear tablas si no existen
@@ -127,6 +71,8 @@ def main():
                 # Commit parcial para guardar progreso y liberar memoria de la sesión si fuera necesario
                 # (Aunque yield_per mantiene la sesión activa, commit es seguro aquí)
                 db.commit()
+                # Liberar objetos de la sesión para liberar memoria
+                db.expunge_all()
 
         print("[INFO] Done! Database updated.")
 

@@ -24,9 +24,6 @@ from src.utils.stopwords import get_stopwords
 
 FINAL_STOPWORDS = get_stopwords()
 
-
-
-
 # --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
 st.set_page_config(
     page_title="Análisis de Sentimientos de Hoteles en Tlaxcala",
@@ -37,6 +34,7 @@ st.set_page_config(
 # --- CARGA DE DATOS ---
 # Variables importadas de config.py
 
+@st.cache_data
 def clean_booking_date(date_str):
     if not isinstance(date_str, str) or not date_str.strip():
         return None
@@ -52,7 +50,6 @@ def clean_booking_date(date_str):
 def load_data():
     df = pd.DataFrame() # Initialize df
     try:
-        # Intentar cargar desde DB
         # Intentar cargar desde DB usando el engine compartido
         with engine.connect() as conn:
             df = pd.read_sql("SELECT * FROM reviews", conn)
@@ -84,7 +81,6 @@ def load_data():
             df['score'] = df['score'].apply(fix_score_value)
 
         # 3. Métricas
-        # 3. Métricas
         if 'sentiment_score_pos' in df.columns and 'sentiment_score_neg' in df.columns:
             df['compound_score'] = df['sentiment_score_pos'] - df['sentiment_score_neg']
         else:
@@ -95,6 +91,14 @@ def load_data():
             else:
                  df['compound_score'] = 0.0
     return df
+
+@st.cache_data
+def generate_wordcloud(text, colormap):
+    if not text or len(text) < 10:
+        return None
+    wc = WordCloud(width=800, height=400, background_color='white', 
+                     colormap=colormap, max_words=50, stopwords=FINAL_STOPWORDS).generate(text)
+    return wc
 
 df = load_data()
 
@@ -212,11 +216,8 @@ else:
                      if not df_pos.empty:
                         text_pos = " ".join(df_pos['title'].astype(str) + " " + df_pos['full_review_processed'].astype(str))
                 
-                if len(text_pos) > 10:
-                    # Usamos un mapa de color verde para lo positivo
-                    wc_pos = WordCloud(width=1200, height=600, background_color='white', 
-                                     colormap='Greens', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_pos)
-                    
+                wc_pos = generate_wordcloud(text_pos, 'Greens')
+                if wc_pos:
                     fig_pos, ax_pos = plt.subplots(figsize=(12, 6))
                     ax_pos.imshow(wc_pos, interpolation='bilinear')
                     ax_pos.axis("off")
@@ -238,11 +239,8 @@ else:
                      if not df_neg.empty:
                         text_neg = " ".join(df_neg['title'].astype(str) + " " + df_neg['full_review_processed'].astype(str))
 
-                if len(text_neg) > 10:
-                    # Usamos un mapa de color rojo/fuego para lo negativo
-                    wc_neg = WordCloud(width=1200, height=600, background_color='white', 
-                                     colormap='Reds', max_words=50, stopwords=FINAL_STOPWORDS).generate(text_neg)
-                    
+                wc_neg = generate_wordcloud(text_neg, 'Reds')
+                if wc_neg:
                     fig_neg, ax_neg = plt.subplots(figsize=(12, 6))
                     ax_neg.imshow(wc_neg, interpolation='bilinear')
                     ax_neg.axis("off")
