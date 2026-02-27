@@ -1,6 +1,7 @@
 import csv
 import logging
 import os
+import time
 from typing import List
 
 import pandas as pd
@@ -54,12 +55,15 @@ def main():
 
     # Fase 1: Obtener Links (Secuencial, un solo driver)
     logging.info("--- FASE 1: BÚSQUEDA DE HOTELES ---")
+    start_phase1 = time.time()
     driver = initialize_driver()
     try:
         links = get_all_hotel_links(driver, config.SEARCH_URL)
     finally:
         driver.quit()
         
+    logging.info(f"[TIMING] Fase 1 completada en {time.time() - start_phase1:.2f}s")
+    
     if not links:
         logging.error("[ERROR] No se encontraron hoteles.")
         return
@@ -78,7 +82,9 @@ def main():
         return
 
     # Fase 2: Procesamiento Paralelo (Delegado al Pipeline)
+    start_phase2 = time.time()
     run_pipeline(links_to_process)
+    logging.info(f"[TIMING] Fase 2 completada en {time.time() - start_phase2:.2f}s")
 
 if __name__ == "__main__":
     main()

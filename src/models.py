@@ -14,6 +14,10 @@ class Review(Base):
     positive = Column(Text)
     negative = Column(Text)
     date = Column(String)
+    room_type = Column(String, nullable=True)
+    traveler_type = Column(String, nullable=True)
+    nationality = Column(String, nullable=True)
+    nights_stayed = Column(String, nullable=True)
     
     # Hash para evitar duplicados (Unique Index)
     review_hash = Column(String, unique=True, index=True)

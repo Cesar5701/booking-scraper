@@ -4,6 +4,7 @@ import torch
 from tqdm import tqdm
 import numpy as np
 from functools import lru_cache
+import time
 
 from src import config
 from src.core.database import SessionLocal, engine, Base
@@ -18,9 +19,9 @@ def get_analyzer(lang: str):
     """
     Carga y cachea el modelo de análisis de sentimientos para un idioma dado.
     """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Loading analyzer for '{lang}' on {device}...")
-    return create_analyzer(task="sentiment", lang=lang)
+    device = 0 if torch.cuda.is_available() else -1
+    print(f"[INFO] Loading analyzer for '{lang}' on {'cuda' if device == 0 else 'cpu'}...")
+    return create_analyzer(task="sentiment", lang=lang, device=device)
 
 
 
@@ -33,47 +34,61 @@ def main():
     
     try:
         # 1. Contar total de reseñas para informar
-        total_reviews = db.query(Review).count()
-        print(f"[INFO] Found {total_reviews} reviews in DB.")
+        total_reviews = db.query(Review).filter(Review.sentiment_label.is_(None)).count()
+        print(f"[INFO] Found {total_reviews} un-processed reviews in DB.")
         
         if total_reviews == 0:
-            print("[ERROR] No reviews found in Database. Run scraper first.")
+            print("[INFO] No new reviews found in Database.")
             return
 
-        # --- PROCESSING IN BATCHES ---
-        print("[INFO] Starting batch processing...")
+        # --- PROCESSING IN CHUNKS ---
+        print("[INFO] Starting chunk processing to avoid memory and session issues...")
         
-        # Tamaño del lote para lectura de DB
-        DB_BATCH_SIZE = 1000
+        CHUNK_SIZE = 500
         
-        # Query con yield_per para no cargar todo en RAM
-        query = db.query(Review).yield_per(DB_BATCH_SIZE)
+        total_lang_time = 0
+        total_inf_time = 0
+        total_db_time = 0
         
-        batch_buffer = []
-        
-        for i, review in enumerate(tqdm(query, total=total_reviews, desc="Processing Reviews")):
-            # Preprocessing
-            full_text = f"{review.title or ''} {review.positive or ''} {review.negative or ''}".strip()
-            processed = clean_text_basic(full_text)
-            review.full_review_processed = processed
-            
-            lang = detect_language_safe(processed)
-            review.language = lang
-            
-            if lang in ['es', 'en']:
-                batch_buffer.append(review)
-            
-            # Procesar cuando el buffer se llena o es el último elemento
-            if len(batch_buffer) >= config.BATCH_SIZE or (i + 1 == total_reviews and batch_buffer):
-                _process_inference_batch(batch_buffer)
-                batch_buffer = [] # Limpiar buffer
+        for _ in range(0, total_reviews, CHUNK_SIZE):
+            chunk = db.query(Review).filter(Review.sentiment_label.is_(None)).limit(CHUNK_SIZE).all()
+            if not chunk:
+                break
                 
-                # Commit parcial para guardar progreso y liberar memoria de la sesión si fuera necesario
-                # (Aunque yield_per mantiene la sesión activa, commit es seguro aquí)
-                db.commit()
-                # Liberar objetos de la sesión para liberar memoria
-                db.expunge_all()
+            start_lang = time.time()
+            batch_es = []
+            batch_en = []
+            
+            for review in chunk:
+                # Preprocessing
+                full_text = f"{review.title or ''} {review.positive or ''} {review.negative or ''}".strip()
+                processed = clean_text_basic(full_text)
+                review.full_review_processed = processed
+                
+                lang = detect_language_safe(processed)
+                review.language = lang
+                if lang == 'es':
+                    batch_es.append(review)
+                elif lang == 'en':
+                    batch_en.append(review)
+                else:
+                    review.sentiment_label = 'SKIPPED'
+            total_lang_time += (time.time() - start_lang)
+            
+            start_inf = time.time()
+            if batch_es:
+                _run_inference(batch_es, 'es')
+            if batch_en:
+                _run_inference(batch_en, 'en')
+            total_inf_time += (time.time() - start_inf)
+            
+            start_db = time.time()
+            db.commit()
+            total_db_time += (time.time() - start_db)
 
+        print(f"[TIMING] Language/Cleaning total time: {total_lang_time:.2f}s")
+        print(f"[TIMING] Inference Model total time: {total_inf_time:.2f}s")
+        print(f"[TIMING] DB Commit total time: {total_db_time:.2f}s")
         print("[INFO] Done! Database updated.")
 
     except Exception as e:
@@ -82,37 +97,21 @@ def main():
     finally:
         db.close()
 
-def _process_inference_batch(reviews_batch):
+def _run_inference(reviews_list, lang):
     """
-    Helper function to process a small batch of reviews for inference.
+    Helper function to process a batch of reviews of a specific language for inference.
     """
-    reviews_es = [r for r in reviews_batch if r.language == 'es']
-    reviews_en = [r for r in reviews_batch if r.language == 'en']
-
-    # Procesar Español
-    if reviews_es:
-        analyzer_es = get_analyzer('es')
-        texts = [r.full_review_processed for r in reviews_es]
-        # Ya estamos en un lote pequeño, así que llamamos predict directamente o usamos predict_in_batches con size total
-        preds = analyzer_es.predict(texts)
-        
-        for r, p in zip(reviews_es, preds):
-            r.sentiment_label = p.output
-            r.sentiment_score_pos = p.probas.get('POS', 0.0)
-            r.sentiment_score_neg = p.probas.get('NEG', 0.0)
-            r.sentiment_score_neu = p.probas.get('NEU', 0.0)
-
-    # Procesar Inglés
-    if reviews_en:
-        analyzer_en = get_analyzer('en')
-        texts = [r.full_review_processed for r in reviews_en]
-        preds = analyzer_en.predict(texts)
-        
-        for r, p in zip(reviews_en, preds):
-            r.sentiment_label = p.output
-            r.sentiment_score_pos = p.probas.get('POS', 0.0)
-            r.sentiment_score_neg = p.probas.get('NEG', 0.0)
-            r.sentiment_score_neu = p.probas.get('NEU', 0.0)
+    analyzer = get_analyzer(lang)
+    texts = [r.full_review_processed for r in reviews_list]
+    
+    # analyzer.predict acepta listas, batch size optimizado
+    preds = analyzer.predict(texts)
+    
+    for r, p in zip(reviews_list, preds):
+        r.sentiment_label = p.output
+        r.sentiment_score_pos = p.probas.get('POS', 0.0)
+        r.sentiment_score_neg = p.probas.get('NEG', 0.0)
+        r.sentiment_score_neu = p.probas.get('NEU', 0.0)
 
 if __name__ == "__main__":
     main()

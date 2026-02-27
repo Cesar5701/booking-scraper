@@ -1,21 +1,10 @@
 import logging
-from typing import List, Dict
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+import requests
+from bs4 import BeautifulSoup
+from typing import List, Dict, TypedDict
+import time
 
-from src.booking_selectors import Reviews
 from src.utils.cleaning import extract_score_from_text
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-# Importar TypedDict desde pipeline (o moverlo a models/types si fuera mejor, pero por ahora aquí)
-# Para evitar circular imports, definimos ReviewData aquí también o usamos Dict por ahora con comentario
-# Lo ideal es tener un types.py, pero para no crear más archivos, lo definiremos aquí o usaremos Dict
-# Dado que pipeline importa pages, pages no debería importar pipeline.
-# Usaremos Dict con comentario de tipo o duplicaremos la definición simple.
-from typing import TypedDict
 
 class ReviewData(TypedDict):
     hotel_name: str
@@ -25,124 +14,174 @@ class ReviewData(TypedDict):
     positive: str
     negative: str
     date: str
+    room_type: str
+    traveler_type: str
+    nationality: str
+    nights_stayed: str
 
 class ReviewsModal:
     """
-    Page Object para el modal/pestaña de reseñas.
+    Nuevo extractor ultra-rápido que utiliza el endpoint oculto de Booking.com
+    para obtener HTML puro sin necesidad de Selenium renders.
     """
-    def __init__(self, driver: webdriver.Chrome, hotel_name: str, hotel_url: str):
-        self.driver = driver
+    def __init__(self, hotel_name: str, hotel_url: str):
         self.hotel_name = hotel_name
         self.hotel_url = hotel_url
-
-    def _get_safe_text(self, element, selector: str) -> str:
+        
+        # Parsear el hotel_id desde la URL limpia para la API
+        # Ejemplo: https://www.booking.com/hotel/mx/fiore-master-en-valquirico.es-mx.html -> fiore-master-en-valquirico
         try:
-            return element.find_element(By.CSS_SELECTOR, selector).text.strip()
-        except NoSuchElementException:
-            return ""
+            self.hotel_id = hotel_url.split('/hotel/mx/')[1].split('.')[0]
+        except Exception:
+            self.hotel_id = ""
+            
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'es-MX,es;q=0.9',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
+        }
 
-    def _extract_review_data(self, review_element) -> ReviewData:
-        """
-        Extrae datos de un elemento de reseña individual.
-        """
+    def _extract_review_data(self, review_elem) -> ReviewData:
         try:
-            title = self._get_safe_text(review_element, Reviews.TITLE)
-            raw_score = self._get_safe_text(review_element, Reviews.SCORE)
+            # Title
+            title_elem = review_elem.select_one('.c-review-block__title')
+            title = title_elem.text.strip() if title_elem else ""
+            
+            # Score
+            score_elem = review_elem.select_one('.bui-review-score__badge')
+            raw_score = score_elem.text.strip() if score_elem else ""
             score = extract_score_from_text(raw_score)
             
-            pos = self._get_safe_text(review_element, Reviews.POSITIVE)
-            neg = self._get_safe_text(review_element, Reviews.NEGATIVE)
+            # Positive & Negative text
+            pos_elem = review_elem.select_one('.c-review__body--positive')
+            pos = pos_elem.text.strip() if pos_elem else ""
             
+            neg_elem = review_elem.select_one('.c-review__body--negative')
+            neg = neg_elem.text.strip() if neg_elem else ""
+            
+            # Si no hay cajones separados
             if not pos and not neg:
-                body = self._get_safe_text(review_element, Reviews.BODY_FALLBACK)
-                if body: pos = body
-
-            date = self._get_safe_text(review_element, Reviews.DATE)
-
-            return {
-                "hotel_name": self.hotel_name, "hotel_url": self.hotel_url, 
-                "title": title, "score": score,
-                "positive": pos, "negative": neg, 
-                "date": date
-            }
-        except StaleElementReferenceException:
-            logging.warning("Stale element encountered while extracting review data.")
-            return {} # type: ignore
-        except Exception as e:
-            logging.warning(f"Error extracting review data: {e}")
-            return {} # type: ignore
-
-    def extract_current_page(self) -> List[ReviewData]:
-        """Extrae las reseñas visibles en la página actual del modal."""
-        try:
-            # Esperar presencia inicial
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, Reviews.ITEM))
-            )
-        except TimeoutException:
-            logging.info("Tiempo de espera agotado buscando reseñas en esta página (posible fin).")
-            return []
-
-        # Obtener elementos y procesar iterando directamente
-        review_elements = self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM)
-        page_reviews = []
-        
-        for i, element in enumerate(review_elements):
-            data = self._extract_review_data(element)
-            if data and data not in page_reviews:
-                page_reviews.append(data)
+                fallback_elem = review_elem.select_one('.c-review__body')
+                if fallback_elem:
+                    pos = fallback_elem.text.strip()
+                    
+            # Date fallback
+            date_elem = review_elem.select_one('.c-review-block__date')
+            date = date_elem.text.strip() if date_elem else ""
+            
+            # --- METADATA ---
+            room_type = ""
+            traveler_type = ""
+            nationality = ""
+            nights_stayed = ""
+            
+            # 1. Nacionalidad (Siempre bajo el nombre en un avatar block subtitle)
+            metadata_spans = review_elem.select('.bui-avatar-block__subtitle')
+            for span in metadata_spans:
+                text = span.text.strip()
+                if text:
+                    # El primer span válido del User Block suele ser la nacionalidad del autor
+                    nationality = text
+                    break # Booking pone país en el primer subtitle
+                    
+            # 2. Detalles del Cuarto, Noches y Viajero (En una lista)
+            list_items = review_elem.select('.bui-list__item')
+            if not list_items:
+                # Fallback genérico para algunos DOM styles
+                list_items = review_elem.select('li')
                 
-        return page_reviews
-
-    def next_page(self) -> bool:
-        """Intenta ir a la siguiente página de reseñas."""
-        try:
-            # Obtener referencia al primer elemento actual para esperar que desaparezca (staleness)
-            current_reviews = self.driver.find_elements(By.CSS_SELECTOR, Reviews.ITEM)
-            first_review = current_reviews[0] if current_reviews else None
-
-            next_btn = WebDriverWait(self.driver, 5).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, Reviews.NEXT_PAGE))
-            )
-            self.driver.execute_script("arguments[0].click();", next_btn)
-            
-            if first_review:
-                WebDriverWait(self.driver, 10).until(EC.staleness_of(first_review))
-            
-            # Esperar a que carguen los nuevos
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, Reviews.ITEM))
-            )
-            return True
-        except (TimeoutException, NoSuchElementException):
-            logging.info("      [END] Fin de la paginación.")
-            return False
+            for li in list_items:
+                # Ignorar posibles fotos o basura
+                if 'c-review-block__photos__item' in li.get('class', []):
+                    continue
+                    
+                text = li.text.strip()
+                lower_text = text.lower()
+                
+                # Noches ("2 noches", "1 noche")
+                if "noch" in lower_text:
+                    nights_stayed = text.split('·')[0].strip()
+                    
+                # Viajero
+                elif any(keyword in lower_text for keyword in ["viaj", "familia", "pareja", "grupo", "amig", "solo", "sola"]):
+                    traveler_type = text
+                    
+                # Tipo de Habitación
+                else:
+                    # Si no es Noches y no es Viajero y no está vacío, generalmente es el cuarto
+                    if text and not room_type:
+                        room_type = text
+                        
+            return {
+                "hotel_name": self.hotel_name, 
+                "hotel_url": self.hotel_url, 
+                "title": title, 
+                "score": score,
+                "positive": pos, 
+                "negative": neg, 
+                "date": date,
+                "room_type": room_type,
+                "traveler_type": traveler_type,
+                "nationality": nationality,
+                "nights_stayed": nights_stayed
+            }
         except Exception as e:
-            logging.error(f"Error al intentar cambiar de página: {e}")
-            return False
+            logging.warning(f"Failed to parse review HTML block: {e}")
+            return {} # type: ignore
 
-    def extract_all_reviews(self, max_reviews: int = 1000) -> List[ReviewData]:
+    def extract_all_reviews(self) -> List[ReviewData]:
         """
-        Extrae todas las reseñas disponibles paginando hasta alcanzar max_reviews.
+        Extrae todas las reseñas disponibles descargando HTML puro por offsets de página usando Requests.
+        Ignora los límites de paginación o el lazy loading engañoso de Booking.
         """
         all_reviews = []
-        page = 1
+        offset = 0
+        rows_per_page = 10
+        consecutive_empty = 0
         
+        if not self.hotel_id:
+            logging.error(f"[ERROR] URL malformada, incapaz de idenfiticar hotel: {self.hotel_url}")
+            return []
+            
+        logging.info(f"      [REQUESTS] Iniciando descarga API paralela para: {self.hotel_id}")
+        
+        # Paginación infinita hasta que Booking devuelva 0 reviews
         while True:
-            logging.info(f"      [PAGE] Procesando página {page}...")
-            batch = self.extract_current_page()
+            # Endpoint interno de Booking para recargar el bloque de comentarios ajax
+            url = f"https://www.booking.com/reviewlist.es.html?pagename={self.hotel_id}&cc1=mx&type=total&offset={offset}&rows={rows_per_page}"
             
-            if batch:
-                all_reviews.extend(batch)
-                logging.info(f"      [PAGE] Pág {page}: {len(batch)} reseñas extraídas. Total: {len(all_reviews)}")
-            
-            if len(all_reviews) >= max_reviews:
-                logging.info(f"      [LIMIT] Límite de {max_reviews} reseñas alcanzado.")
-                break
-            
-            if not self.next_page():
+            try:
+                # Descargamos
+                req_start = time.time()
+                response = requests.get(url, headers=self.headers, timeout=10)
+                
+                if response.status_code != 200:
+                    logging.warning(f"      [REQUESTS ERROR] Status {response.status_code} en offset {offset}")
+                    break
+                    
+                # Parsear HTML
+                soup = BeautifulSoup(response.text, 'html.parser')
+                review_blocks = soup.select('.review_list_new_item_block')
+                
+                # Criterio de parada
+                if not review_blocks:
+                    consecutive_empty += 1
+                    if consecutive_empty >= 2: # Tolerancia de un salto fantasma
+                        break
+                else:
+                    consecutive_empty = 0
+                    
+                # Transformar datos
+                for block in review_blocks:
+                    data = self._extract_review_data(block)
+                    if data:
+                        all_reviews.append(data)
+                        
+                logging.info(f"      [REQUESTS] Pág {(offset//10)+1} extraída ({len(review_blocks)} items) en {time.time()-req_start:.2f}s | Acumulado: {len(all_reviews)}")
+                offset += rows_per_page
+                
+            except requests.RequestException as e:
+                logging.error(f"      [REQUESTS CRASH] Error de red: {e}")
                 break
                 
-            page += 1
-            
-        return all_reviews[:max_reviews]
+        return all_reviews

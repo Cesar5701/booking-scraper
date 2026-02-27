@@ -96,9 +96,12 @@ def load_data():
 def generate_wordcloud(text, colormap):
     if not text or len(text) < 10:
         return None
-    wc = WordCloud(width=800, height=400, background_color='white', 
-                     colormap=colormap, max_words=50, stopwords=FINAL_STOPWORDS).generate(text)
-    return wc
+    try:
+        wc = WordCloud(width=800, height=400, background_color='white', 
+                         colormap=colormap, max_words=50, stopwords=FINAL_STOPWORDS).generate(text)
+        return wc
+    except ValueError:
+        return None
 
 df = load_data()
 

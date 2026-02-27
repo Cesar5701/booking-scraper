@@ -7,7 +7,7 @@ from src import config
 fasttext.FastText.eprint = lambda x: None
 
 # Cargar modelo FastText (Singleton)
-MODEL_PATH = os.path.join(config.BASE_DIR, "lid.176.ftz")
+MODEL_PATH = os.path.join(config.BASE_DIR, "data", "models", "lid.176.ftz")
 FT_MODEL = None
 
 def load_fasttext_model():

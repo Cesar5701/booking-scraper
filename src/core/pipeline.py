@@ -4,6 +4,7 @@ import logging
 import os
 import csv
 import hashlib
+import time
 from sqlalchemy.exc import IntegrityError
 from typing import List, Dict, Optional, Set, TypedDict
 
@@ -55,11 +56,19 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
                     # 1. Intentar guardar en DB primero para filtrar duplicados
                     saved_count = 0
                     new_reviews_for_csv = []
+                    start_db = time.time()
 
                     try:
                         for item in batch:
-                            # Generar Hash Único basado en campos clave
-                            unique_str = f"{item.get('hotel_url')}{item.get('date')}{item.get('title')}{item.get('positive')}{item.get('negative')}"
+                            # 1.1 Eliminar Query Params cambiantes de la URL para el hash
+                            # Ej: https://booking.com/hotel.html?aid=123 -> https://booking.com/hotel.html
+                            raw_url = item.get('hotel_url', '')
+                            clean_url = raw_url.split('?')[0]
+                            # Actualizamos el diccionario con la URL limpia para cuando lo vayamos a escribir en CSV y BD
+                            item['hotel_url'] = clean_url
+                            
+                            # 1.2 Generar Hash Único basado en campos clave
+                            unique_str = f"{clean_url}{item.get('date')}{item.get('title')}{item.get('positive')}{item.get('negative')}"
                             review_hash = hashlib.md5(unique_str.encode('utf-8')).hexdigest()
                             
                             # Limpiar score antes de guardar
@@ -74,7 +83,11 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
                                 positive=item.get("positive"),
                                 negative=item.get("negative"),
                                 date=item.get("date"),
-                                review_hash=review_hash
+                                review_hash=review_hash,
+                                room_type=item.get('room_type', ''),
+                                traveler_type=item.get('traveler_type', ''),
+                                nationality=item.get('nationality', ''),
+                                nights_stayed=item.get('nights_stayed', '')
                             )
                             try:
                                 db.add(review)
@@ -92,11 +105,12 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
                         db.rollback()
 
                     # 2. Escribir en CSV solo los registros que fueron nuevos en la DB
+                    db_time = time.time() - start_db
                     if new_reviews_for_csv:
                         writer.writerows(new_reviews_for_csv)
                         f.flush()
 
-                    logging.info(f"   [SAVED] Procesados {len(batch)}. Nuevos en DB/CSV: {saved_count}.")
+                    logging.info(f"   [SAVED] Procesados {len(batch)}. Nuevos en DB/CSV: {saved_count}. DB Time: {db_time:.4f}s")
                 except Exception as e:
                     logging.error(f"Error escribiendo datos: {e}")
                 finally:
@@ -104,48 +118,49 @@ def csv_writer_listener(result_queue: queue.Queue, filename: str) -> None:
         finally:
             db.close()
 
-def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int, driver_path: str) -> None:
+def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -> None:
     """
-    Función ejecutada por cada hilo worker para procesar una lista de URLs de hoteles.
+    Función ejecutada por cada hilo worker para procesar una lista de URLs de hoteles
+    utilizando Requests directo hacia la API oculta de Booking.
     
     Args:
         urls (List[str]): Lista de URLs de hoteles asignada a este worker.
         result_queue (queue.Queue): Cola compartida para enviar los resultados (reseñas).
         worker_id (int): Identificador numérico del worker para logging.
-        driver_path (str): Ruta al ejecutable del driver.
     """
-    driver = initialize_driver(executable_path=driver_path)
-    hotel_page = HotelPage(driver)
+    total_urls = len(urls)
+    logging.info(f"[HILO {worker_id}] Iniciado. Asignados {total_urls} hoteles API.")
     
-    logging.info(f"Worker {worker_id} iniciado. Procesando {len(urls)} URLs.")
+    from src.pages.reviews_modal import ReviewsModal
     
-    for url in urls:
+    for idx, url in enumerate(urls, 1):
+        start_url = time.time()
         try:
-            logging.info(f"Worker {worker_id} visitando: {url}")
-            hotel_page.navigate(url)
+            # Extraer nombre
+            try:
+                hotel_name_from_url = url.split('/hotel/mx/')[1].split('.')[0]
+            except Exception:
+                hotel_name_from_url = url[:50] + "..."
+                
+            logging.info(f"[HILO {worker_id}] ({idx}/{total_urls}) Descargando API hotel: {hotel_name_from_url}")
             
-            # Abrir modal de reseñas
-            reviews_modal = hotel_page.open_reviews_modal()
-            if not reviews_modal:
-                logging.warning(f"Worker {worker_id}: No se pudo abrir modal para {url}")
-                continue
-            
-            # Extraer reseñas
-            all_reviews = reviews_modal.extract_all_reviews(max_reviews=config.MAX_REVIEWS_PER_HOTEL)
+            # Instanciar scraper de peticiones
+            scraper = ReviewsModal(hotel_name=hotel_name_from_url, hotel_url=url)
+            all_reviews = scraper.extract_all_reviews()
             
             if all_reviews:
                 result_queue.put(all_reviews)
-                logging.info(f"Worker {worker_id}: {len(all_reviews)} reseñas enviadas a cola para {url}")
+                logging.info(f"[HILO {worker_id}] -> {len(all_reviews)} reseñas extraidas de {hotel_name_from_url} y enviadas a DB.")
             else:
-                logging.warning(f"Worker {worker_id}: 0 reseñas extraídas para {url}")
+                logging.warning(f"[HILO {worker_id}] -> 0 reseñas encontradas para {hotel_name_from_url}.")
                 
+            logging.info(f"[TIMING - HILO {worker_id}] Tiempo total en {hotel_name_from_url}: {time.time() - start_url:.2f}s")
+            
         except Exception as e:
-            logging.error(f"Worker {worker_id} error en {url}: {e}")
-            # Importante: No detener el worker por un error en un hotel, seguir con el siguiente
+            logging.error(f"[ERROR - HILO {worker_id}] Falló en {hotel_name_from_url}: {e}")
             continue
             
-    driver.quit()
-    logging.info(f"Worker {worker_id} finalizado.")
+    logging.info(f"[HILO {worker_id}] Finalizó todas sus tareas correctamente.")
 
 def run_pipeline(hotel_urls: List[str], processed_urls: Set[str] = set()) -> None:
     """
@@ -180,13 +195,12 @@ def run_pipeline(hotel_urls: List[str], processed_urls: Set[str] = set()) -> Non
     chunk_size = (len(urls_to_process) // config.MAX_WORKERS) + 1
     chunks = [urls_to_process[i:i + chunk_size] for i in range(0, len(urls_to_process), chunk_size)]
     
-    # Obtener ruta del driver UNA VEZ
-    driver_path = get_driver_path()
-
+    # Ya no ocupamos driver_path para BS4
+    
     threads = []
     for i, chunk in enumerate(chunks):
         if not chunk: continue
-        t = threading.Thread(target=worker_process, args=(chunk, result_queue, i+1, driver_path))
+        t = threading.Thread(target=worker_process, args=(chunk, result_queue, i+1))
         t.start()
         threads.append(t)
         
