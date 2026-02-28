@@ -138,7 +138,8 @@ def worker_process(urls: List[str], result_queue: queue.Queue, worker_id: int) -
         try:
             # Extraer nombre
             try:
-                hotel_name_from_url = url.split('/hotel/mx/')[1].split('.')[0]
+                raw_name = url.split('/hotel/mx/')[1].split('.')[0]
+                hotel_name_from_url = raw_name.replace('-', ' ').title()
             except Exception:
                 hotel_name_from_url = url[:50] + "..."
                 

@@ -69,10 +69,8 @@ def main():
                 review.language = lang
                 if lang == 'es':
                     batch_es.append(review)
-                elif lang == 'en':
-                    batch_en.append(review)
                 else:
-                    review.sentiment_label = 'SKIPPED'
+                    batch_en.append(review)
             total_lang_time += (time.time() - start_lang)
             
             start_inf = time.time()
