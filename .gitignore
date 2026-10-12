@@ -4,8 +4,7 @@ __pycache__/
 *.aiexclude
 *.code-workspace
 *.pdf
-!tesis/figuras/*.pdf
-!tesis/main.pdf
+tesis/
 *.csv#
 lid.176.ftz
 /data/Correctos
@@ -13,13 +12,4 @@ lid.176.ftz
 /data/New Folder
 /Books/
 /Audit Report
-tesis/*.aux
-tesis/*.bbl
-tesis/*.blg
-tesis/*.lof
-tesis/*.log
-tesis/*.lot
-tesis/*.out
-tesis/*.toc
-tesis/capitulos/*.aux
-tesis/capitulos/*.tex
+*.log
