@@ -1,0 +1,201 @@
+id,hotel_name,score,true_label,human_label,es_mixta,tiene_regionalismo_mx,body_clean,pred_svm,pred_logreg,pred_rob_base,pred_rob_ft,p_pos_base,p_neg_base
+2450,boutique-malinalli,5.0,NEG,NEU,0,0,la comida y que el wifi no llegue a las habitaciones.,POS,NEG,NEG,NEG,0.0051315976,0.92425424
+9490,cacaxtla,6.0,NEG,NEU,0,0,el elevador.,NEU,NEU,NEU,NEU,0.09231787,0.15370964
+4595,mision-san-francisco,6.0,NEG,NEU,0,0,no air conditioning on rooms.,NEG,NEG,NEU,NEU,0.13324933,0.320761
+7441,boutique-las-torres,4.0,NEG,NEG,0,0,las instalaciones y la atención del personal.,POS,POS,NEU,POS,0.23287137,0.050715942
+5864,hostal-mago,5.0,NEG,POS,0,0,"la habitación estaba limpia, el wifi y la televisión funcionaron bien. sí hubo agua caliente.",NEG,NEG,POS,NEU,0.93798655,0.004105857
+57,cabanas-calpulalpan-de-paso-heroica-ciudad-de-calpulalpan,1.0,NEG,NEG,0,0,nunca encontré el alojamiento y nunca me respondieron mis msjs y mis llamadas . seguro es una estafa porque si me cobraron y aún no me regresan mi dinero.,NEG,NEG,NEG,NEG,0.0033074967,0.95049596
+7705,boutique-molino-de-los-reyes-inspiracion,5.0,NEG,NEU,0,0,el restaurante y su vista.,NEU,NEU,NEU,POS,0.43920115,0.02358421
+9513,cacaxtla,4.0,NEG,POS,0,0,las camas son cómodas.,NEG,NEG,POS,NEG,0.67110246,0.021279449
+2118,b-las-campanas,3.0,NEG,NEU,0,0,cerca del centro.,NEG,NEG,NEU,NEU,0.25672135,0.062881365
+3083,posadas-abanza,4.0,NEG,POS,0,0,buena atención y limpio.,POS,POS,POS,POS,0.8569147,0.007304229
+8302,gs-jerocs-tlaxcala,1.0,NEG,NEG,1,1,"pésimo en toda la palabra: no servía la regadera, habitaciones extremadamente incómodas, muchísimo calor, alimentos caros y malísimos.",NEG,NEG,NEG,NEG,0.0032843868,0.98309535
+6214,loft-santorino-3-en-valquirico-val-quirico,1.0,NEG,NEU,0,0,pues no tengo argumentos porque nos cancelaron el día que nos íbamos a hospedar 😭.,POS,NEG,NEG,NEG,0.0050258376,0.9368379
+1176,cipressi-spectacular-italian-tuscan-style-loft,3.0,NEG,POS,0,0,el lugar es muy bonito y cómodo.,POS,POS,POS,POS,0.97054076,0.002984727
+8015,hosteria-tocali-tlaxcala-de-xicohtencatl,6.0,NEG,POS,0,0,"la terraza para desayunar, la ubicación es excelente y la atención del personal. todos fueron muy amables.",POS,POS,POS,POS,0.9795488,0.002448853
+3930,hoteli-alifer-tlaxcala-x-tecal-living,1.0,NEG,NEG,0,0,absolutamente nada.,NEG,NEG,NEG,NEG,0.1306367,0.4890078
+2312,lindo-mini-departamento,1.0,NEG,NEG,0,0,nada son unos estafadores más de 1 hora esperando bajo la lluvia para que al final nunca dieron la cara.,NEG,NEG,NEG,NEG,0.005640285,0.97110546
+9181,azucena,6.0,NEG,POS,0,0,"el desayuno bien, y lo mejor de todo es la atención del personal, esa increíble.",POS,POS,POS,POS,0.9738836,0.0025706114
+1216,casa-el-rincon-jose-maria-morelos-buenavista,1.0,NEG,NEG,0,0,nada.,NEG,NEG,NEU,NEG,0.24282114,0.27349806
+6364,milenio-nanacamilpa,1.0,NEG,NEG,0,0,nunca me recibieron llegué al lugar a las 3 toque el timbre marque el teléfono que tenían. y nadie dió respuesta.,NEG,NEG,NEG,NEG,0.010775557,0.75523317
+9169,azucena,6.0,NEG,NEG,0,1,"es un hotel un poco viejo, la cama y almohadas duras. la cama tiene una cobija muy delgada para la clima que hace en la ciudad.",NEU,NEU,NEG,NEU,0.008514989,0.90591556
+5781,hostal-mago,3.0,NEG,NEU,0,0,ubicacion lejos del centro.,POS,NEG,NEU,NEG,0.049624514,0.07612224
+7561,boutique-las-torres,6.0,NEG,POS,0,1,"el personal fue muy amable, principalmente el señor que nos apoyo en el estacionamiento del coche.. el hotel se encuentra cerca del centro.",NEU,NEU,POS,POS,0.9292018,0.004864884
+8197,gs-jerocs-tlaxcala,1.0,NEG,NEU,0,0,habitaciones coloniales en pèsimas condiciones.,POS,POS,NEU,NEU,0.02882401,0.3219392
+8001,hosteria-tocali-tlaxcala-de-xicohtencatl,1.0,NEG,NEG,1,0,pésimo lugar nada recomendable.,NEG,NEG,NEG,NEG,0.007658426,0.9656474
+3818,boutique-posada-la-casona-de-corta-c-s,6.0,NEG,NEU,0,0,no hay servicio de restaurante.,NEU,NEU,NEG,NEG,0.00858859,0.8558779
+9669,del-angel-apizaco,5.0,NEG,NEG,0,0,"no incluyen el desayuno como lo indica la aplicación, lo cobraron los 3 días, al momento del registro indique que eramos 2 adultos y un niño, me dijeron que solo tenia registrado un adulto y no me dieron opción de pagar el 2do adulto y que el buffet incluido solo era el domingo y a los niños no lo incluían, dato que no da la aplicación, osea los niños no son humanos y no comen, al final el desayuno lo cobraron, y me sustrajeron de la habitación una chamarra negra y nadie me dio respuesta por que no hay evidencia y el internet pésimo, ni señal en el tv.",NEG,NEG,NEG,NEG,0.0024869659,0.9649505
+7115,winn-confort,5.0,NEG,NEU,0,0,habitaciones adecuados para el precio.,NEU,NEU,NEU,POS,0.19389053,0.03239893
+6060,majestuoso-alojamiento,1.0,NEG,NEG,1,0,"muy mal servicio, nunca respondieron los mensajes, ni llamadas, no hubo manera de contactar al anfitrión, no pude quedarme ahí y tuve que pagar otro lugar, pésimo.. servicio, espero me reembolsen mi dinero o la noche de hospedaje.",NEG,NEG,NEG,NEG,0.0032054605,0.9750963
+9210,azucena,4.0,NEG,NEG,1,1,"desde que llegué, el chico de recepción con mala actitud me comento que no era válida mi reservación por booking.com, ya que él tenía cerrada la cuenta, de mala gana me registró. malísima ubicación para un hotel, ya que las habitaciones que dan a la calle son muy ruidosas por lo que no se puede descansar. en cuanto a limpieza, la regadera deja mucho que desear, con visible moho en la ducha y el olor del caño del baño se va a la habitación. para la habitación del primer piso hay que subir escaleras y no hay personal que ayude con el equipaje lo cual se agradecería mucho. fue tan incomodo que de dls noches que tenía pagadas, solo me quede una, al otro día me salí y no hubieron preguntas para indagar el motivo de la salida anticipada.",NEU,NEG,NEG,NEG,0.002223606,0.98221403
+7139,winn-confort,1.0,NEG,NEG,0,0,"la ropa de cama vieja y rota, los colchones muy sucios el mobiliario viejo y manchado. muy austero.",POS,POS,NEG,NEG,0.0038825371,0.95932937
+9405,cacaxtla,6.0,NEG,NEU,0,0,1. debimos pedir cambio de habitación: estaba muy caliente y no tienen aire acondicionado o ventilador.. 2. pedí a través de booking me ayudaran con el contacto de un conductor no se contactaron.. 3. las duchas de ambas habitaciones no tienen puertas y el agua salpica al baño.,POS,NEG,NEG,NEG,0.0039707185,0.9158959
+2128,b-las-campanas,4.0,NEG,POS,0,0,el trato fue muy hamable.,POS,NEU,POS,POS,0.754949,0.03433732
+992,la-cabana-de-don-neto-santa-maria-atlihuetzian,1.0,NEG,NEG,0,0,"pesimos anfitriónes, descortes, impuntuales, zona insegura no hay nada al rededor, muy groseros, nonse.hospeden ahi, no debería de estar en booking 😡😡😡.",NEG,NEG,NEG,NEG,0.0034455673,0.9761673
+5789,hostal-mago,1.0,NEG,NEU,0,0,me cancelaron mi reservación.,POS,NEG,NEG,NEG,0.008183509,0.8827421
+9773,del-angel-apizaco,6.0,NEG,NEG,0,0,la comodidad de la cama.. limpieza.,POS,NEU,NEU,POS,0.4740994,0.020487128
+7565,boutique-las-torres,6.0,NEG,NEU,0,0,me cobraron doble en la app y en efectivo.,NEG,NEG,NEG,NEG,0.014350002,0.60504216
+2451,boutique-malinalli,1.0,NEG,POS,1,0,el hotel es muy bonito y tiene excelente ubicación. el desayuno es ligero pero la mermelada muy buena.,POS,POS,POS,NEU,0.9742328,0.002702229
+8189,gs-jerocs-tlaxcala,6.0,NEG,NEG,0,0,"habia una fiesta y el ruido era horrible, batalle mucho en dormir. obvio no descanse. no vuelvo a este hotel.. tuve que llamar a alguien de recepcion para que me arreglara la tele. al final solo 3 canales se veian =(.",NEG,NEG,NEG,NEG,0.005401972,0.9254822
+2447,boutique-malinalli,3.0,NEG,NEU,0,0,ubicación unicamente.,POS,NEU,NEU,POS,0.24166888,0.05477149
+4553,mision-san-francisco,6.0,NEG,NEU,0,0,ubicación y hotel.,NEU,NEU,NEU,NEU,0.12362201,0.023942526
+5047,tlaxcala-tlaxcala,6.0,NEG,NEG,0,0,desayuno muy básico y sería bueno especificar antes de llegar al hotel.,NEU,NEU,NEU,NEU,0.46431163,0.01149753
+6129,hostal-el-dulce-nombre,6.0,NEG,NEG,1,0,la ubicación es excelente pero la relación calidad -precio deja mucho que desear.,POS,POS,NEG,NEU,0.14335355,0.5190455
+1622,quinta-san-clemente-tlaxcala-de-xicohtencatl,5.0,NEG,NEG,0,0,nada en la tarifa se establecía los desayunos y cobraron un no.,NEG,NEG,NEG,NEG,0.0063232146,0.7990961
+2216,b-las-campanas,1.0,NEG,NEU,0,0,está cerca del centro.,NEG,NEG,NEU,NEG,0.17804803,0.031085549
+7144,winn-confort,1.0,NEG,NEG,0,1,"nada, por qué ni el precio fue el que marcaba booking, te dice que el estacionamiento es gratis y te terminan cobrando 100 pesos.",NEG,NEG,NEG,NEG,0.005819841,0.91414475
+3915,hoteli-alifer-tlaxcala-x-tecal-living,6.0,NEG,NEU,1,1,no utilice el desayuno y la ubicacion estar super bien pero todo en el hotel esta muy muy gastado y antiguo.,POS,NEU,NEG,NEG,0.006296433,0.9205146
+3765,loft-santorino-6-en-valquirico-nativitas,2.0,NEG,NEU,0,0,se salió toda el agua negra del baño e inundó la habitación... apesataba horrible!!!,NEU,NEU,NEG,NEG,0.005536134,0.96955764
+4848,mision-san-francisco,2.0,NEG,NEG,0,0,todo lo bueno quedó opacado por el trato de karen en recepción.,POS,POS,NEU,POS,0.46342108,0.07184696
+5112,tlaxcala-tlaxcala,4.0,NEG,NEG,1,0,"el desayuno incluido no lo tomamos porque por $80 pesos más puedes acceder al bufete que es sencillo, pero bueno, limitado en cantidades porque sus cazuelas son pequeñas y variadas.",POS,NEU,NEU,NEU,0.21500662,0.030237695
+6975,las-candelas,6.0,NEG,NEU,0,0,"no me agradaron las sábanas, acaloran mucho.. no tuvimos shampoo ni jabón.",NEG,NEG,NEG,NEG,0.0086207185,0.94116527
+4005,posada-de-la-virgen,8.0,NEU,POS,0,0,limpieza bonito amplio.,POS,POS,POS,POS,0.72602254,0.02439206
+8694,mirante-tlaxcala,8.0,NEU,POS,0,0,el personal muy atento. las personas que atendían para el desayuno muy amables. se sentía limpio el lugar.,POS,POS,POS,POS,0.9681539,0.0037467598
+9674,del-angel-apizaco,7.0,NEU,NEU,0,0,"restaurante, limpieza.",NEU,NEU,NEU,POS,0.13350643,0.03930479
+435,rancho-escondido-casa-goyri,8.0,NEU,POS,0,0,"el lugar está bonito como lo dice la gente que trabaja ahí, es para desconectarse, tiene todo lo que necesitas.",NEU,NEU,POS,POS,0.9775824,0.0028826664
+3041,posadas-abanza,8.0,NEU,NEU,0,0,"me gustó la limpieza de las habitaciones, el diseño.",POS,POS,POS,POS,0.96301335,0.003630385
+203,senorial-tlaxcala,7.0,NEU,NEU,0,0,ubicación camas cómodas limpieza cumple con lo basico.,POS,POS,NEU,NEU,0.21718942,0.056542777
+9678,del-angel-apizaco,7.0,NEU,POS,0,0,"limpieza de la habitación buena, el personal fue muy amable.",NEU,NEU,POS,NEU,0.96221703,0.0032789574
+6689,hb-express,7.0,NEU,NEU,0,0,no desayune en el lugar.,POS,NEG,NEG,NEU,0.03393606,0.5391824
+481,maria-blanca,7.0,NEU,NEU,0,0,el lugar.,POS,POS,NEU,POS,0.29461953,0.08352252
+6525,hb-express,8.0,NEU,POS,0,1,"lo mejor fue el estacionamiento, amplio y disponible siempre.",NEU,NEU,POS,POS,0.9548741,0.003836422
+3078,posadas-abanza,7.0,NEU,POS,0,0,el lugar limpio y bien ubicado.,POS,POS,POS,POS,0.88843745,0.005179354
+746,malinalli-express,7.0,NEU,NEG,1,1,"es como un motelito un poco más decente.. se escucha todo de afuera. el restaurante lo atiende una sola persona (el mesero) entonces es súper súper lento.. cierran las puertas al público en la noche entonces si llegas tarde tienes que llamar a recepción, pero el número que tienen anunciado está mal. todo una aventura.",NEG,NEG,NEG,NEG,0.004889745,0.92786545
+6646,hb-express,8.0,NEU,POS,1,1,"la atención de los recepcionistas, fueron muy amables tanto a la llegada como a la salida.. las camas cómodas, en general todo muy limpio, no huele a hotel viejo, más bien a limpio y descansamos muy bien.",NEU,NEU,POS,POS,0.966995,0.0033702552
+192,senorial-tlaxcala,8.0,NEU,NEU,0,0,la atención del team que atiende en el restaurante.,POS,NEU,NEU,POS,0.12236702,0.10526654
+3131,master-loft-en-val-quirico,8.0,NEU,NEU,0,0,los productos en la ducha.,POS,NEG,NEU,POS,0.12262635,0.100001134
+7690,boutique-molino-de-los-reyes-inspiracion,7.0,NEU,POS,0,0,"el lugar es muy bonito, la habitación muy cómoda!",POS,POS,POS,POS,0.9683206,0.0029078305
+5477,lofts-canaria,8.0,NEU,POS,0,0,"buenas instalaciones, es cómodo y con buenas amenidades de cortesía en la habitación.. muy bien ubicado dentro del complejo valquirico.",POS,POS,POS,POS,0.9512909,0.003675568
+2070,b-las-campanas,8.0,NEU,POS,0,1,"personal súper amable, al pendiente de tu llegada, muy atentos.",POS,POS,POS,POS,0.9470019,0.004651406
+6319,milenio-nanacamilpa,8.0,NEU,NEU,0,0,la calidez del personal.,NEU,NEU,POS,POS,0.8564651,0.012739994
+5209,finca-belen,7.0,NEU,POS,0,0,"el lugar es bonito, rústico, nuevo.",NEU,NEU,POS,POS,0.9146172,0.005513441
+8178,gs-jerocs-tlaxcala,7.0,NEU,NEU,0,1,temperatura de la alberca.,NEU,NEU,NEU,NEU,0.28768885,0.20834404
+1546,atrani,8.0,NEU,NEG,0,0,"el jacuzi, no estaba en la habitación, como parecía en las fotos cuando reserve.. y lo más, no funciono.",NEU,NEG,NEG,NEG,0.003538376,0.890123
+7120,winn-confort,7.0,NEU,POS,0,1,"lugar seguro, cuenta con estacionamiento, excelente atención.",POS,POS,POS,POS,0.9121451,0.0058529912
+8904,rio-miel,8.0,NEU,NEU,0,0,"la ubicación, los servicios y el trato.",POS,POS,NEU,POS,0.15050948,0.029015752
+8277,gs-jerocs-tlaxcala,8.0,NEU,POS,0,0,las instalaciones muy bien.,POS,POS,POS,POS,0.90094286,0.011830152
+7180,winn-confort,7.0,NEU,NEU,0,0,se inundó la habitación.,NEU,NEU,NEG,NEG,0.018621108,0.75975263
+1285,loft-loreto-en-val-quirico,8.0,NEU,POS,0,0,muy centrica la ubicación.,NEG,NEG,POS,NEG,0.7011573,0.024999103
+2865,porta-paradiso-valquirco-albergo-boutique,8.0,NEU,NEU,0,0,que está dentro de el parque.,POS,POS,NEU,POS,0.15945905,0.07552435
+2977,posadas-abanza,8.0,NEU,POS,0,1,"la recamara muy espaciosa limpia y con un balcón lindo que tenía buena vista del pueblito, muy fresca y teníamos aguas y refrescos complementarios a la llegada, el personal muy amable.",POS,POS,POS,POS,0.9769657,0.0026729982
+9246,azucena,8.0,NEU,POS,0,0,la ubicación es excelente.. el personal muy amable y atento.,POS,POS,POS,POS,0.9720794,0.0040390096
+2482,boutique-malinalli,8.0,NEU,POS,0,0,"estás bien el cuarto, el agua muy bien.",NEU,NEU,POS,NEU,0.90953207,0.008052541
+4659,mision-san-francisco,8.0,NEU,POS,1,1,la ubicación es lo mejor ! frente a la plaza principal. la parte de la recepción es bonita . la atención es buena aunque les falta un poquito más de iniciativa. al hacer check in me dieron la llave y listo. tuve que preguntar por dónde estaba mi habitación a dónde dirigirme . creo que deberían decirte aquí está su llave su habitación se localiza por allá . bienvenido. más atención al cliente les falta .,NEU,NEU,POS,NEU,0.9322122,0.0037230353
+4705,mision-san-francisco,8.0,NEU,POS,0,0,"la ubicación, la habitación, desayunos muy ricos.",POS,NEU,POS,POS,0.9506382,0.0028982027
+8137,gs-jerocs-tlaxcala,7.0,NEU,POS,0,1,"excelente servicio del personal, el restaurante genial!! desde meseros, chef, etc.. volvería solo por la alberca y el restaurante.",POS,NEU,POS,POS,0.9642941,0.005168799
+4372,mision-san-francisco,8.0,NEU,NEU,0,0,desayuno.. ubicación.. design.,NEU,NEU,NEU,NEU,0.084653355,0.02869505
+8589,city-express-apizaco,8.0,NEU,POS,0,0,"las habitaciones son cómodas, está muy limpio.",NEG,POS,POS,NEU,0.92733085,0.0037299134
+6671,hb-express,8.0,NEU,NEU,0,0,sin mesita para trabajar ni mesita para manipular la maleta.,POS,NEG,NEU,NEU,0.023655832,0.12908888
+6945,las-candelas,8.0,NEU,NEU,0,1,las cobijas muy pesadas.,POS,POS,NEG,NEG,0.0067158737,0.95700103
+2016,mueganos-4-en-valquirico,8.0,NEU,NEU,0,0,está cómodo.,NEU,NEU,POS,POS,0.54347533,0.041584454
+6120,hostal-el-dulce-nombre,8.0,NEU,POS,0,0,limpio y amplio.,POS,POS,POS,POS,0.6598714,0.023180807
+5203,finca-belen,8.0,NEU,POS,1,1,"el personal fue respetuoso, preocupado por brindar un servicio eficiente, agradable. el servicio del estacionamiento no tuvo cargo extra, la habitación siempre estuvo limpia. dado que está ubicado en una zona relativamente fría, las cobijas que se incluyen en la habitación fueron suficientes para dormir tranquilamente sin necesidad de llevar alguna adicional. la habitación es amplia y caben bien todos sin sentirse apretados.",POS,NEU,POS,NEU,0.8747417,0.007685711
+836,xiadani-restaurante-temazcal-amp-spa,8.0,NEU,POS,1,1,tiene un bonito jardín las chica y el personal muy amables las agitación limpiar y bonitas pero si les recomendaría poner unas cobijas extras por que hace mucho frío.,NEU,NEU,POS,NEU,0.9605331,0.0049522766
+5487,lofts-canaria,7.0,NEU,NEG,0,0,en la habitación olía a drenaje.,POS,NEU,NEG,NEG,0.06162133,0.47822386
+1890,functional-and-nice-house,8.0,NEU,NEU,0,0,la amplitud.,NEU,NEU,NEU,POS,0.120611995,0.36141402
+1834,loft-river,8.0,NEU,POS,0,0,la ubicación es muy buena.,NEU,NEU,POS,NEU,0.9507477,0.003723952
+1086,renacimiento-huamantla2,7.0,NEU,NEU,1,1,"uno obtiene un sitio razonablemente limpio, bien ubicado y con estacionamiento gratuito a un precio razonable. una de las habitaciones tenía una cama muy cómoda pero la otra estaba el colchón viejo y poco firme.",NEU,NEU,NEU,NEU,0.23519793,0.07641939
+6533,hb-express,7.0,NEU,NEU,0,0,costo-beneficio.. atención amable en la recepción.,NEU,NEU,NEU,POS,0.09577129,0.051517773
+5574,lofts-canaria,8.0,NEU,NEU,0,0,"ubicación, tamaño del alojamiento, limpieza, confort.",POS,POS,NEU,POS,0.102398865,0.027782673
+8464,city-express-apizaco,8.0,NEU,POS,0,0,la rapidez y atención del personal.,POS,NEG,POS,POS,0.81381595,0.012939582
+5783,hostal-mago,7.0,NEU,POS,0,0,está muy bien el espacio y la temática de un lugar para relajarse.,NEU,NEU,POS,POS,0.9762181,0.0022701528
+342,de-la-loma,10.0,POS,POS,1,0,"el hotel es muy cómodo. las habitaciones confortables. el personal muy amable y te apoyan en lo que necesites. el centro está muy cerca y, aunque está en una avenida transitada, no hay ruido extremo.",POS,POS,POS,NEU,0.94592047,0.0040854444
+7523,boutique-las-torres,10.0,POS,POS,0,0,la habitación muy cómoda y de muy buen tamaño.,POS,POS,POS,POS,0.9720715,0.002350014
+5987,auguri-zocalo-depto-val-quirico-4-camas,10.0,POS,POS,0,0,"la ubicación del departamento es genial, la comodidad del departamento sin duda fue genial.",POS,POS,POS,POS,0.9767924,0.0023177918
+2620,casa-tlaxcalli,10.0,POS,POS,0,0,las habitaciones muy limpias y bonitas.,NEU,NEU,POS,POS,0.966603,0.002965445
+6895,las-candelas,10.0,POS,NEU,0,0,siempre es el mejor lugar para hospedarse en huamantla.,POS,POS,POS,POS,0.9235116,0.0045999703
+6715,hb-express,10.0,POS,POS,0,0,"que está acondicionado muy bien, para gente que viaja por trabajo es excelente.",POS,NEU,POS,POS,0.9638018,0.0028490904
+1932,hermoso-departamento-en-val-quirico-loft-frontana,10.0,POS,POS,0,0,excelente departamento en todos los sentidos.,POS,POS,POS,POS,0.96369874,0.003606375
+9575,del-angel-apizaco,10.0,POS,POS,0,1,desayuno americano incluido superdelicioso.,NEU,NEU,POS,POS,0.86886567,0.008053301
+6984,las-candelas,10.0,POS,POS,0,0,muy limpio y servicio profesional.,POS,POS,POS,POS,0.9061201,0.00983228
+9263,azucena,10.0,POS,POS,0,0,"la cercanía, el trato tanto a nosotros como a mi perrito, el desayuno muy rico.",NEG,NEG,POS,POS,0.9667886,0.0030446788
+4287,mision-san-francisco,10.0,POS,POS,0,0,el lugar muy limpio y muy amable la gente.,POS,POS,POS,POS,0.966553,0.0030913192
+376,pisa-en-valquirico-centro,10.0,POS,POS,0,0,"ubicación, atención y fácil acceso a la propiedad.",POS,NEU,NEU,POS,0.2520087,0.016066998
+1901,hermoso-departamento-en-val-quirico-loft-frontana,10.0,POS,POS,0,0,"muy bonito loft y excelente comunicación con el anfitrion, tiene una buena ubicación de valquirico (ideal para relajarte y salir de la rutina), lo disfrutamos mucho, esperamos volver!",POS,POS,POS,POS,0.9827943,0.0020621312
+3329,hacienda-soltepec-huamantla,9.0,POS,POS,0,0,muy agradable para descansar.,POS,POS,POS,POS,0.930903,0.0069786734
+7175,winn-confort,9.0,POS,POS,0,0,muy bien por el precio.,NEU,NEU,POS,POS,0.9129293,0.01242478
+194,senorial-tlaxcala,10.0,POS,POS,0,0,la atención del personal.,POS,NEG,NEU,NEG,0.10208237,0.13296466
+2766,increible-loft-completo-en-val-quirico-con-piscina,10.0,POS,NEU,0,0,hermoooooso… perfecta ubicación y confort.,POS,POS,POS,POS,0.95862794,0.0029848043
+1783,loft-river,9.0,POS,NEU,0,0,el horario de salida es muy temprano 11:00 am por lo menos a las 13:00 pm o 12:00.,NEU,NEU,NEU,NEU,0.045085933,0.036129355
+2834,vecchia-luna-lo-mas-acogedor-agradable-y-comodo,10.0,POS,NEU,0,0,"tiene puerta a la calle, lo cual es muy conveniente cuando vienes con equipaje, o simplemente estás cerca y quieres pasar a la habitación. la decoración va muy de acuerdo al lugar, todos los artículos para el huésped son de primera calidad.",NEU,NEU,POS,NEU,0.88814,0.005828857
+7493,boutique-las-torres,9.0,POS,POS,0,0,las instalaciones muy limpias además las camas cómodas. el baño muy funcional.,POS,POS,POS,POS,0.9630414,0.004015756
+725,malinalli-express,10.0,POS,POS,0,0,"las instalaciones son agradables, el personal es amable, las habitaciones estaban limpias y adecuadas para una estancia breve.",POS,NEU,POS,NEU,0.95211595,0.0034300662
+414,rancho-escondido-casa-goyri,9.0,POS,NEU,0,0,la tranquilidad del lugar y las vistas.,POS,POS,POS,POS,0.7853305,0.007268933
+9653,del-angel-apizaco,10.0,POS,POS,1,0,"excelente hotel, muy amable todo el personal, riquísima comida, quizás el único pero que le pongo es que faltan más cosas que se pudieran hacer dentro del hotel pero finalmente está excelente.",POS,POS,POS,POS,0.97611904,0.0027829816
+2185,b-las-campanas,10.0,POS,POS,0,0,muy bien.,POS,POS,POS,POS,0.89074475,0.018096542
+8847,rio-miel,10.0,POS,POS,0,0,lo cálido que te hacen sentir y lo especial.. gracias por hacernos sentir como en casa.. la atención especial a mis.niños... no tiene precio.,POS,POS,POS,POS,0.97401595,0.004176704
+621,loft-mueganos-iii-en-val-quirico,10.0,POS,POS,0,0,"la comodidad es inigualable, el lugar estaba más que limpio, las instalaciones en perfecto estado, nos encantó.",POS,POS,POS,POS,0.9802731,0.002875088
+5980,auguri-zocalo-depto-val-quirico-4-camas,10.0,POS,POS,0,0,el depto es cómodo y bien ubicado.,NEU,NEU,POS,POS,0.9370194,0.004000575
+8427,city-express-apizaco,10.0,POS,POS,0,0,edtá cómodo y bien ubicado.,POS,POS,POS,POS,0.87097335,0.0077276886
+7967,hosteria-tocali-tlaxcala-de-xicohtencatl,10.0,POS,POS,0,0,el desayuno delicioso.,POS,POS,POS,POS,0.91614664,0.007978011
+4718,mision-san-francisco,10.0,POS,POS,0,1,"el servicio excelente, la ubicación perfecta, la comida muy rica, el estacionamiento espacioso.",POS,POS,POS,POS,0.976653,0.0028053636
+8705,mirante-tlaxcala,10.0,POS,NEU,0,0,la habitación en general.,NEU,NEU,NEU,POS,0.08069804,0.12207751
+3927,hoteli-alifer-tlaxcala-x-tecal-living,10.0,POS,POS,0,0,"la limpieza, la atención del personal y su amabilidad.",POS,POS,POS,POS,0.83226067,0.00838569
+1045,departamento-lux-en-val-quirico-loft-frontana,10.0,POS,POS,0,0,"muy limpio, amplio y cómodo.",POS,POS,POS,POS,0.90116143,0.008551335
+158,trastevere,10.0,POS,POS,1,1,"me encantó! muy acogedor, las camas súper cómodas, tiene todo lo que necesitas, el día que llegamos estaba lloviendo un poco y gracias a que nos dejaron hasta paraguas pudimos salir sin problemas, está muy limpio y la decoración muy linda.",POS,POS,POS,POS,0.9808379,0.0021101234
+1484,departamentos-del-jardin-de-toribio,10.0,POS,NEU,0,0,"tranquilidad,seguridad, espacios.",POS,POS,POS,POS,0.5947561,0.022357104
+7917,hosteria-tocali-tlaxcala-de-xicohtencatl,10.0,POS,POS,1,0,"es pequeño pero higiénico, instalaciones perfectas, el desayuno muy bueno.",POS,POS,POS,POS,0.9743526,0.003617931
+7466,boutique-las-torres,9.0,POS,POS,0,0,limpieza y atención del personal.,NEU,NEU,NEU,POS,0.23911296,0.027985044
+1930,hermoso-departamento-en-val-quirico-loft-frontana,10.0,POS,POS,1,1,"la ubicación del loft está increíble porque está súper cerca de la entrada pero sin ser rodeado de tanto bullicio, las instalaciones están súper cómodas y hermosas, todo se ve con muy buen mantenimiento y limpieza, al igual que la comodidad es increíble. tiene una tina súper linda en la habitación lo que le da un plus de relajación.",POS,POS,POS,POS,0.97605395,0.0032059231
+4296,mision-san-francisco,9.0,POS,POS,0,0,es muy bonito y bastante cómodo.,POS,POS,POS,POS,0.9677036,0.004082546
+4676,mision-san-francisco,10.0,POS,POS,0,0,"es un muy bonito hotel, con todas las amenidades. de muy buen gusto, en todas sus áreas, así como el personal muy amable y atento. lo recomiendo mucho!",POS,POS,POS,POS,0.9807674,0.0027701831
+2064,b-las-campanas,9.0,POS,NEU,0,0,la cercanía con la catedral.,POS,NEG,POS,POS,0.5113792,0.023363657
+9499,cacaxtla,10.0,POS,POS,1,0,la vista de los volcanes es excelente.. las fotos las tomó mi esposa y no las pude subir yo. pero recomiendo la vista.,POS,POS,POS,POS,0.97410405,0.0022288128
+1771,loft-river,10.0,POS,NEU,0,0,no son claras las especificaciones en cuanto al servicio de tv.,NEU,NEU,NEG,NEG,0.005910207,0.9184856
+1913,hermoso-departamento-en-val-quirico-loft-frontana,9.0,POS,POS,0,0,muy limpio y con todo lo que se necesita para alojarse ahí.,POS,POS,POS,POS,0.88119316,0.004998587
+530,maria-blanca,9.0,POS,POS,0,0,"el departamento, la limpieza, la comodidad.",POS,POS,NEU,POS,0.44058186,0.017949633
+6475,hb-express,9.0,POS,POS,0,0,excelente lugar. costo-beneficio nos encantó.,POS,POS,POS,POS,0.972637,0.0027184177
+2944,posadas-abanza,10.0,POS,POS,0,0,"todo, excelente lugar, vista hermosa, perfecto 👌🏿.",POS,POS,POS,POS,0.97747314,0.0026860663
+9600,del-angel-apizaco,9.0,POS,NEU,0,0,las instalaciones y la ubicación para la finalidad de nuestro viaje pq estaba muy cerca del deportivo.,NEU,NEU,NEU,POS,0.29672706,0.015552417
+250,departamento-casa-bonita-en-valquirico-tlaxcala,10.0,POS,POS,0,0,"locación y el tamaño del loft ,mui céntrico.",POS,POS,NEU,NEU,0.06280758,0.06243253
+5733,hostal-mago,9.0,POS,NEU,0,0,el precio-calidad.,NEG,NEU,NEU,POS,0.069073796,0.09564476
+526,maria-blanca,10.0,POS,POS,0,0,"está hermoso , muy limpio y cómodo.",POS,POS,POS,POS,0.9751203,0.0028195218
+4396,mision-san-francisco,9.0,POS,POS,0,0,"la ubicación en plena plaza de la constitución, el desayuno, que estaba delicioso, la habitación muy confortable y la recepción, muy atentos.",POS,NEU,POS,POS,0.95722723,0.0026421496
+638,loft-milan-valquirico-santagueda,10.0,POS,POS,0,0,"esta muy bonito, bien ubicado, nos dejaron una botella de cortesía y siempre estuvo al pendiente el anfitrión.",POS,POS,POS,POS,0.9766092,0.002849982
+8767,mirante-tlaxcala,10.0,POS,POS,0,0,el lugar impecable!! atención excelente. siempre se estuvo al pendiente de que necesitábamos.,POS,POS,POS,POS,0.9674782,0.003534151
+60,loretta-en-valquirico,10.0,POS,POS,0,0,"un lugar cómodo y bien ubicado, con lo necesario para descansar y pasarla bien en val'quirico .....",POS,POS,POS,POS,0.92080814,0.00330391
+3613,holiday-inn-tlaxcala,10.0,POS,POS,1,0,todo excelente salvo.,POS,POS,POS,POS,0.83603734,0.014599478
+534,maria-blanca,10.0,POS,POS,0,0,"muy buena ubicación. jorge fue muy amable y dio instrucciones precisas y oportunas. muy limpio, cómodo y bonito. lo pasamos espectacular.",POS,POS,POS,POS,0.9787644,0.0027299372
+3028,posadas-abanza,10.0,POS,POS,0,0,si todo perfecto!!,POS,POS,POS,POS,0.8769831,0.007152534
+2356,hermoso-loft-en-valquirico-lofts-frontana,9.0,POS,POS,0,0,comodidad y ubicación.,POS,POS,NEU,POS,0.25245458,0.029660018
+1135,cipressi-spectacular-italian-tuscan-style-loft,10.0,POS,POS,1,1,"el departamento esta muy bonito muy acogedor, tiene todo para una estancia agradable, el balcon muy bonito....todo muy tranquilo..de verdad recomiendo ampliamente este loft es pequeño pero super bien para 4 personas.",POS,POS,POS,POS,0.97668505,0.002456949
+5535,lofts-canaria,10.0,POS,POS,0,0,"instalaciones bonitas, cómodo.",POS,POS,POS,POS,0.9243575,0.008414933
+330,de-la-loma,9.0,POS,POS,1,0,"como lo dice su nombre el hotel está situado en una loma, la vista sobre la ciudad es fantástica y el centro está a unos minutos caminando. la habitación sencilla pero cómoda. el restaurante bueno, el domingo nos tocó desayuno buffet. buen café y buena comida. el personal muy atento y amable. ciertas paredes exteriores son cubiertas de murales alusivos a la cultura de la ciudad. hay zonas verdes y arbolades en medio de las numerosas terrazas. nos gustó mucho.",POS,POS,POS,POS,0.9724606,0.0025815838
+1252,loft-loreto-en-val-quirico,10.0,POS,POS,0,0,"un lugar impecable, la pasamos muy bien en nuestra estancia.",POS,POS,POS,POS,0.98085576,0.002222289
+3061,posadas-abanza,10.0,POS,POS,1,0,"todo muy bien, bien ubicado, personal muy amables, me buscaron opciones para un tercer huésped son reserva, el lugar muy lindo.",POS,POS,POS,POS,0.96524686,0.0027061002
+2015,mueganos-4-en-valquirico,10.0,POS,POS,0,0,"el lugar excelente limpio, bonito y muy cómodo.",POS,POS,POS,POS,0.9719269,0.0027196757
+8158,gs-jerocs-tlaxcala,10.0,POS,NEU,0,1,la alberca y el restaurante la comida es muy deliciosa.,NEU,NEU,POS,POS,0.9722731,0.003081539
+1821,loft-river,10.0,POS,POS,0,0,"está muy bien ubicado, muy cómodo el loft.",POS,POS,POS,POS,0.96684164,0.0047090896
+1678,loft-nizza-en-val-quirico,10.0,POS,POS,0,1,"la decoración es súper bonita, el espacio muy lindo y limpio.",POS,NEU,POS,POS,0.9773027,0.0028008039
+5516,lofts-canaria,10.0,POS,NEU,0,0,hace mucho calor en nuestra habitación y eso que es el 24 de diciembre.,NEU,NEU,NEG,NEG,0.0059988573,0.9246569
+1903,hermoso-departamento-en-val-quirico-loft-frontana,10.0,POS,NEU,0,0,el lugar y las amenidades.,NEU,NEU,POS,POS,0.57546085,0.012195947
+2362,hermoso-loft-en-valquirico-lofts-frontana,10.0,POS,POS,0,0,la ubicación es lo mejor en el corazón de val'quirico.,NEU,NEU,POS,POS,0.91216445,0.007956563
+7041,las-candelas,10.0,POS,POS,0,0,"muy céntrico, excelente opción en viajes cortos.",POS,POS,POS,POS,0.8903846,0.0062591494
+1977,casa-malinche,10.0,POS,POS,0,0,"la originalidad de las instalaciones, ubicación y atención.",POS,POS,NEU,POS,0.37851593,0.026362495
+6615,hb-express,10.0,POS,POS,0,0,buena atención.,POS,NEG,POS,POS,0.5587801,0.044623096
+4406,mision-san-francisco,10.0,POS,NEU,0,1,el diseño de la alberca.,POS,NEU,NEU,POS,0.2568146,0.05396526
+2472,boutique-malinalli,10.0,POS,POS,0,1,"cuenta con buena ubicación, son amables en la atención y la alberca está con buena temperatura.",POS,NEU,POS,NEU,0.9471213,0.0038062192
+6988,las-candelas,9.0,POS,POS,0,0,me gustó la ubicación. aproximadamente 4 cuadras del centro. se puede llegar caminando y el hotel está pintoresco en su decoración y la habitación es cómoda . las almohadas y la cama . es acogedor .para unas noches en el pueblo .,POS,NEU,POS,NEU,0.96397537,0.002260008
+7824,hosteria-tocali-tlaxcala-de-xicohtencatl,10.0,POS,POS,0,0,"la ubicación, el cuarto muy cómodo y sobre todo el desayuno, muy bueno con esa vista a la ciudad!",NEU,NEU,POS,POS,0.9819083,0.0018444568
+6645,hb-express,9.0,POS,POS,0,0,segunda vez que me hospedo y el personal muy amable y las habitaciones limpias.,NEU,NEU,POS,POS,0.917169,0.005714002
+2783,increible-loft-completo-en-val-quirico-con-piscina,10.0,POS,POS,0,0,en general el apartamento es muy cómodo y muy bonito.,POS,POS,POS,POS,0.9614725,0.0033128117
+213,senorial-tlaxcala,9.0,POS,POS,1,0,la limpieza y que olía muy bien.,POS,POS,POS,POS,0.9243231,0.007601664
+2789,increible-loft-completo-en-val-quirico-con-piscina,10.0,POS,POS,0,0,las instalaciones muy limpias en una excelente ubicación del apartamento todo funciona.,POS,POS,POS,POS,0.9652284,0.0029297655
+6989,las-candelas,10.0,POS,POS,0,0,todo las muy amable y muy atento sobre la ubicación exelente.,POS,POS,POS,POS,0.8647067,0.005083789
+9724,del-angel-apizaco,10.0,POS,POS,0,0,"el hotel está hermoso, el buffet delicioso!",POS,POS,POS,POS,0.9769463,0.0026923127
+8537,city-express-apizaco,9.0,POS,NEU,0,0,lo silencioso del lugar.,POS,NEU,NEU,POS,0.14430803,0.15905641
+174,lucca-81-en-valquirico,10.0,POS,POS,0,0,la habitación y el lugar son excelentes.,POS,POS,POS,POS,0.95716995,0.0041726744
+918,xiadani-restaurante-temazcal-amp-spa,9.0,POS,POS,0,0,el hotel muy bonito y la atención amable.,POS,POS,POS,POS,0.97590226,0.0031905312
+2706,canto-del-bosque-santuario-de-las-luciernagas,9.0,POS,POS,0,0,"limpieza y atención, personal amable, buenos precios de comida .",POS,NEU,POS,POS,0.9242833,0.003452161
+5720,hostal-mago,9.0,POS,POS,0,0,"la ubicación está excelente, puedes llegar a muchos puntos de la ciudad.. la comida y trato es muy buena.",POS,NEU,POS,NEU,0.97534287,0.0027989128
+9278,azucena,10.0,POS,POS,0,0,la limpieza del lugar y la atención de su personal.,POS,POS,NEU,POS,0.32082784,0.025652245
+9041,rio-miel,10.0,POS,NEU,0,0,es acogedor.,POS,POS,POS,POS,0.9206874,0.011033207
+2104,b-las-campanas,9.0,POS,POS,1,0,"excelente ubicación, muy céntrico.. personal amable, te orientan al solicitarles otros servicios fuera del hotel.. habitaciones limpias y confortables.. como ya no tenían disponible la habitación para más días, me sugirieron otros posibles hoteles donde hospedarme.",NEG,NEG,POS,POS,0.8140993,0.010381972
+4231,cuamanco-huamantla,9.0,POS,POS,0,1,el personal es muy amable y el lugar es perfecto para lo que queríamos que era descansar una noche. muy linda la alberca.,POS,POS,POS,POS,0.9811772,0.0021123295
+2632,casa-tlaxcalli,9.0,POS,NEU,0,0,instalaciones nuevas.,POS,POS,POS,POS,0.5645198,0.016584085
+4077,posada-de-la-virgen,9.0,POS,POS,0,1,el lugar es impecable. tal cual las fotos.el estacionamiento amplio y techado.,POS,NEU,POS,POS,0.95739335,0.0042955643
+6032,auguri-zocalo-depto-val-quirico-4-camas,10.0,POS,POS,0,0,"muy buena ubicación del departamento, esta muy lindo, limpio y tiene todo lo necesario.",POS,POS,POS,POS,0.978749,0.002268297
+1371,casa-bravo-huamantla,10.0,POS,POS,0,0,las personas muy amables y nos recibieron bastante bien.,NEU,NEU,POS,POS,0.97430396,0.00342597
+7515,boutique-las-torres,9.0,POS,POS,0,1,"en general todo estuvo super bien la verdad muy cómodo, la ubicación del hotel es excelente, la atención del personal fue excelente tambié.",POS,POS,POS,POS,0.97305703,0.0032998102
+40,firenze-en-valquirico,10.0,POS,POS,0,0,"muy bonito, comodo y acogedor.. muy cerca de la entrada y del zócalo.",POS,POS,POS,POS,0.9606886,0.0055654636
+2319,loft-iduri-en-valquirico,10.0,POS,POS,0,0,"me gustó todo, la ubicación, la decoración y las instalaciones. muy agradable y confortable la estancia. la ubicación no es relevante, todo está cerca.",POS,POS,POS,POS,0.96044606,0.0034026403
