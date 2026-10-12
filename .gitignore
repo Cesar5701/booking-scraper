@@ -1,0 +1,24 @@
+scraper_venv/
+__pycache__/
+*.pyc
+*.aiexclude
+*.code-workspace
+*.pdf
+!tesis/figuras/*.pdf
+!tesis/main.pdf
+*.csv#
+lid.176.ftz
+/data/Correctos
+/data/otros
+/data/New Folder
+/Books/
+/Audit Report
+tesis/*.aux
+tesis/*.bbl
+tesis/*.blg
+tesis/*.lof
+tesis/*.log
+tesis/*.lot
+tesis/*.out
+tesis/*.toc
+tesis/capitulos/*.aux
