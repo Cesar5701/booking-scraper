@@ -28120,3 +28120,18 @@ Stacktrace:
 2026-02-27 15:39:25,653 - INFO -    [SAVED] Procesados 301. Nuevos en DB/CSV: 0. DB Time: 0.0783s
 2026-02-27 15:39:25,653 - INFO - Pipeline finalizado correctamente.
 2026-02-27 15:39:25,654 - INFO - [TIMING] Fase 2 completada en 293.50s
+2026-03-06 13:04:18,826 - INFO - [RESUME] Lógica de reanudación activada. 198 hoteles ya procesados.
+2026-03-06 13:04:18,826 - INFO - --- FASE 1: BÚSQUEDA DE HOTELES ---
+2026-03-06 13:04:18,827 - INFO - 🚀 Iniciando WebDriver (Core)...
+2026-03-06 13:04:18,854 - INFO - 🎭 User-Agent asignado: Mozilla/5.0 (Android 14; Mobile; rv:137.0) Gecko/137.0 Firefox/137.0
+2026-03-06 13:04:18,855 - INFO - ====== WebDriver manager ======
+2026-03-06 13:04:18,959 - INFO - Get LATEST chromedriver version for google-chrome
+2026-03-06 13:04:19,116 - INFO - Get LATEST chromedriver version for google-chrome
+2026-03-06 13:04:19,261 - INFO - Get LATEST chromedriver version for google-chrome
+2026-03-06 13:04:19,662 - INFO - WebDriver version 145.0.7632.117 selected
+2026-03-06 13:04:19,666 - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.117/linux64/chromedriver-linux64.zip
+2026-03-06 13:04:19,666 - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.117/linux64/chromedriver-linux64.zip
+2026-03-06 13:04:19,829 - INFO - Driver downloading response is 200
+2026-03-06 13:04:20,452 - INFO - Get LATEST chromedriver version for google-chrome
+2026-03-06 13:04:20,659 - INFO - Driver has been saved in cache [/home/cesar/.wdm/drivers/chromedriver/linux64/145.0.7632.117]
+2026-03-06 13:04:21,237 - INFO - Navegando a: https://www.booking.com/searchresults.html?ss=Tlaxcala%2C+Tlaxcala%2C+M%C3%A9xico&lang=es
