@@ -22,3 +22,4 @@ tesis/*.lot
 tesis/*.out
 tesis/*.toc
 tesis/capitulos/*.aux
+tesis/capitulos/*.tex
