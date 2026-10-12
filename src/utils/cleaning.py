@@ -4,8 +4,12 @@ from typing import Optional, Union
 
 # Compiled Regex Patterns
 RE_SPACES = re.compile(r'\s+')
+RE_LINEBREAKS = re.compile(r'[\r\n]+')
 RE_SCORE_VAL = re.compile(r'(\d+(\.\d+)?)')
 RE_SCORE_TEXT = re.compile(r'(\d+[\.,]?\d*)')
+
+EMPTY_COMMENT_MARKER = "esta entrada no tiene comentarios"
+
 
 def clean_text_basic(text: Union[str, float, None]) -> str:
     """
@@ -24,6 +28,37 @@ def clean_text_basic(text: Union[str, float, None]) -> str:
     # Eliminar espacios extra
     text = RE_SPACES.sub(' ', text).strip()
     return text
+
+
+def build_clean_review_text(
+    positive: Union[str, float, None],
+    negative: Union[str, float, None],
+    include_title: Union[str, float, None] = None,
+) -> str:
+    """
+    Construye el texto limpio de una reseña filtrando el marcador predeterminado
+    de Booking ('Esta entrada no tiene comentarios') y separando cláusulas
+    opuestas o saltos de línea con puntuación explícita ('. ').
+    """
+    parts = []
+    for raw_field in (include_title, positive, negative):
+        if not isinstance(raw_field, str):
+            continue
+        # Reemplazar saltos de carro internos (\r, \n) por punto seguido cuando no terminen en puntuación
+        segments = [seg.strip() for seg in RE_LINEBREAKS.split(raw_field) if seg.strip()]
+        cleaned_segments = []
+        for seg in segments:
+            if EMPTY_COMMENT_MARKER in seg.lower():
+                continue
+            cleaned_segments.append(seg)
+        if cleaned_segments:
+            joined = ". ".join(
+                s if s[-1] in ".!?;:" else f"{s}." for s in cleaned_segments
+            )
+            parts.append(joined)
+    if not parts:
+        return ""
+    return clean_text_basic(" ".join(parts))
 
 def fix_score_value(val: Union[str, float, int, None]) -> Optional[float]:
     """

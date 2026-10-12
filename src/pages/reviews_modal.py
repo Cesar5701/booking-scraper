@@ -1,3 +1,10 @@
+"""
+Módulo de Extracción de Reseñas por API Interna (REST HTML)
+
+Este módulo optimiza la descarga de información eludiendo el motor de renderización (DOM)
+completo de Selenium. Transforma el sistema a un enfoque basado en HTTP Requests usando BeautifulSoup.
+Interactúa con el endpoint no documentado utilizado asíncronamente por Ajax de Booking (`/reviewlist.es.html`).
+"""
 import logging
 import requests
 from bs4 import BeautifulSoup
@@ -21,20 +28,24 @@ class ReviewData(TypedDict):
 
 class ReviewsModal:
     """
-    Nuevo extractor ultra-rápido que utiliza el endpoint oculto de Booking.com
-    para obtener HTML puro sin necesidad de Selenium renders.
+    Extractor enfocado en recuperar HTML puro mediante peticiones iterativas (offsets).
+    Al imitar las cabeceras HTTP (Headers) correctas, el servidor devuelve un componente HTML conteniendo
+    directamente los cajones textuales de cada huésped.
     """
     def __init__(self, hotel_name: str, hotel_url: str):
         self.hotel_name = hotel_name
         self.hotel_url = hotel_url
         
-        # Parsear el hotel_id desde la URL limpia para la API
-        # Ejemplo: https://www.booking.com/hotel/mx/fiore-master-en-valquirico.es-mx.html -> fiore-master-en-valquirico
+        # Parsear el identificador interno ('hotel_id') desde la URL estandarizada de Booking
+        # Ejemplo de ruta: https://www.booking.com/hotel/mx/fiore-master-en-valquirico.es-mx.html
+        # Resultado aislado de la máscara regex manual: 'fiore-master-en-valquirico'
         try:
             self.hotel_id = hotel_url.split('/hotel/mx/')[1].split('.')[0]
         except Exception:
             self.hotel_id = ""
             
+        # Headers esenciales para que el Firewall de Application Routing no bloquée por falta de huella 
+        # (Spoofing the User-Agent)
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept-Language': 'es-MX,es;q=0.9',
@@ -42,73 +53,78 @@ class ReviewsModal:
         }
 
     def _extract_review_data(self, review_elem) -> ReviewData:
+        """
+        Analizador sintáctico especializado (Parser DOM Estático) con BeautifulSoup.
+        Descompone el bloque individual (`.review_list_new_item_block`) extrayendo nodos clave de evaluación y demográficos.
+        
+        Args:
+            review_elem (bs4.element.Tag): Nodo HTML con aislamiento de clase CSS de la reseña.
+        """
         try:
-            # Title
+            # 1. Recuperar Título Principal del Comentario
             title_elem = review_elem.select_one('.c-review-block__title')
             title = title_elem.text.strip() if title_elem else ""
             
-            # Score
+            # 2. Recuperar Puntuación Numérica base 10 (Ej: "8,5") y normalizar
             score_elem = review_elem.select_one('.bui-review-score__badge')
             raw_score = score_elem.text.strip() if score_elem else ""
             score = extract_score_from_text(raw_score)
             
-            # Positive & Negative text
+            # 3. Analizar Contenedores Bi-Lados Opcionales (Lo que me gustó / no me gustó)
             pos_elem = review_elem.select_one('.c-review__body--positive')
             pos = pos_elem.text.strip() if pos_elem else ""
             
             neg_elem = review_elem.select_one('.c-review__body--negative')
             neg = neg_elem.text.strip() if neg_elem else ""
             
-            # Si no hay cajones separados
+            # Condicional de Estructura Clásica (Cuando solo hay 1 cajón de retroalimentación en vez de separación positiva/negativa)
             if not pos and not neg:
                 fallback_elem = review_elem.select_one('.c-review__body')
                 if fallback_elem:
                     pos = fallback_elem.text.strip()
                     
-            # Date fallback
+            # 4. Extraer la marca temporal de publicación
             date_elem = review_elem.select_one('.c-review-block__date')
             date = date_elem.text.strip() if date_elem else ""
             
-            # --- METADATA ---
+            # --- SECCIÓN: METADATOS SOCIO-DEMOGRÁFICOS ---
             room_type = ""
             traveler_type = ""
             nationality = ""
             nights_stayed = ""
             
-            # 1. Nacionalidad (Siempre bajo el nombre en un avatar block subtitle)
+            # Parsear la Nacionalidad: Invariablemente ubicada debajo del nombre visible en bloque '.bui-avatar-block__subtitle'
             metadata_spans = review_elem.select('.bui-avatar-block__subtitle')
             for span in metadata_spans:
                 text = span.text.strip()
                 if text:
-                    # El primer span válido del User Block suele ser la nacionalidad del autor
+                    # El primer span válido alojado como subtítulo de bloque de avatar del usuario es un texto geográfico
                     nationality = text
-                    break # Booking pone país en el primer subtitle
+                    break
                     
-            # 2. Detalles del Cuarto, Noches y Viajero (En una lista)
+            # Parsear la Tipología del Viaje (Habitación, Noches, Grupo Social de Célula de viaje) iterando items de la lista UI
             list_items = review_elem.select('.bui-list__item')
             if not list_items:
-                # Fallback genérico para algunos DOM styles
                 list_items = review_elem.select('li')
                 
             for li in list_items:
-                # Ignorar posibles fotos o basura
+                # Omitir metadatos multimedia basura (Miniaturas fotográficas) 
                 if 'c-review-block__photos__item' in li.get('class', []):
                     continue
                     
                 text = li.text.strip()
                 lower_text = text.lower()
                 
-                # Noches ("2 noches", "1 noche")
+                # Clasificador de Duración de Estancia
                 if "noch" in lower_text:
                     nights_stayed = text.split('·')[0].strip()
                     
-                # Viajero
+                # Clasificador Predictivo sobre Composición Social (Keyword Matching)
                 elif any(keyword in lower_text for keyword in ["viaj", "familia", "pareja", "grupo", "amig", "solo", "sola"]):
                     traveler_type = text
                     
-                # Tipo de Habitación
+                # Por descarta heurístico el nodo restante representa Categoría de la Habitación
                 else:
-                    # Si no es Noches y no es Viajero y no está vacío, generalmente es el cuarto
                     if text and not room_type:
                         room_type = text
                         
@@ -131,8 +147,12 @@ class ReviewsModal:
 
     def extract_all_reviews(self) -> List[ReviewData]:
         """
-        Extrae todas las reseñas disponibles descargando HTML puro por offsets de página usando Requests.
-        Ignora los límites de paginación o el lazy loading engañoso de Booking.
+        Bucle de descarga infinita. Construye sobre el modelo asimétrico paramétrico de la API (Paginación tipo 'Offset').
+        Envía peticiones con un avance lineal (0, 10, 20...) hasta el cese total de devolución de nodos de reseña validado
+        por una tolerancia sintomática a las anomalías de red.
+        
+        Returns:
+            List[ReviewData]: Colección masiva en memoria de los diccionarios evaluativos extraídos.
         """
         all_reviews = []
         offset = 0
@@ -145,13 +165,13 @@ class ReviewsModal:
             
         logging.info(f"      [REQUESTS] Iniciando descarga API paralela para: {self.hotel_id}")
         
-        # Paginación infinita hasta que Booking devuelva 0 reviews
+        # Paginación controlada por comprobación recursiva de agotamiento de datos
         while True:
-            # Endpoint interno de Booking para recargar el bloque de comentarios ajax
+            # Endpoint interno inyectando Query Strings de parametrización (PageName y Offset Dinámico)
             url = f"https://www.booking.com/reviewlist.es.html?pagename={self.hotel_id}&cc1=mx&type=total&offset={offset}&rows={rows_per_page}"
             
             try:
-                # Descargamos
+                # Efectuar descarga de recursos
                 req_start = time.time()
                 response = requests.get(url, headers=self.headers, timeout=10)
                 
@@ -159,29 +179,33 @@ class ReviewsModal:
                     logging.warning(f"      [REQUESTS ERROR] Status {response.status_code} en offset {offset}")
                     break
                     
-                # Parsear HTML
+                # Descompilar recurso estático en Árbol Abstracto de sintaxis BeautifulSoup
                 soup = BeautifulSoup(response.text, 'html.parser')
                 review_blocks = soup.select('.review_list_new_item_block')
                 
-                # Criterio de parada
+                # Criterio de Freno Arquitectónico si Booking devuelva cero reseñas contiguas:
+                # Puede ser ocasional (cero reseñas por error de motor base) -> permitiendo una tolerancia de '2 iteraciones (Saltos Fantasmas)'
                 if not review_blocks:
                     consecutive_empty += 1
-                    if consecutive_empty >= 2: # Tolerancia de un salto fantasma
+                    if consecutive_empty >= 2: 
                         break
                 else:
                     consecutive_empty = 0
                     
-                # Transformar datos
+                # Parsear el listado bloque a bloque e insertarlo en memoria estática
                 for block in review_blocks:
                     data = self._extract_review_data(block)
                     if data:
                         all_reviews.append(data)
                         
                 logging.info(f"      [REQUESTS] Pág {(offset//10)+1} extraída ({len(review_blocks)} items) en {time.time()-req_start:.2f}s | Acumulado: {len(all_reviews)}")
+                
+                # Iterar salto secuencial matemático
                 offset += rows_per_page
                 
             except requests.RequestException as e:
-                logging.error(f"      [REQUESTS CRASH] Error de red: {e}")
+                logging.error(f"      [REQUESTS CRASH] Error de red intermitente interrumpiendo flujo: {e}")
+                # En sistemas maduros requereríamos lógica de 'Rate Limiting / BackOff-Retry'. En caso de fallo forzamos salida para retener las extraídas previas
                 break
                 
         return all_reviews

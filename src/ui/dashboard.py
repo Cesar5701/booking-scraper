@@ -1,7 +1,14 @@
+"""
+Módulo de Visualización Interactivo (Dashboard Analítico)
+
+Frontend principal de la aplicación que procesa los datos tabulares provenientes
+del pipeline de Deep Learning y Scraper y los transforma en KPIs e insight gráficos interactivos.
+Aprovecha `streamlit` para interactividad Web y componentes `plotly` / `matplotlib` para la graficación.
+"""
 import os
 import sys
 
-# Asegurar que el directorio raíz del proyecto esté en el path
+# Asegurar que el directorio raíz del proyecto esté en el path lógico para la importación relativa absoluta
 current_dir = os.path.dirname(os.path.abspath(__file__)) # src/ui
 src_dir = os.path.dirname(current_dir) # src
 project_root = os.path.dirname(src_dir) # booking-scraper
@@ -23,6 +30,7 @@ from src.core.database import engine
 from src.utils.cleaning import fix_score_value
 from src.utils.stopwords import get_stopwords
 
+# Cargar Palabras Vacías (Stopwords) generadas a partir un corpus de optimización NLTK/Spacy
 FINAL_STOPWORDS = get_stopwords()
 
 # --- CONFIGURACIÓN Y SETUP DE PÁGINA ---
@@ -34,23 +42,39 @@ st.set_page_config(
 
 @st.cache_data
 def clean_booking_date(date_str):
+    """
+    Decodificador Semántico de Fechas de Booking. 
+    Limpia cadenas textuales como "Comentó el: 4 marzo 2024" unificándolas a formato estandar Datetime Pandas.
+    Usa el decorador de caché de Streamlit para no recalcular repeticiones y ganar rendimiento de carga.
+    """
     if not isinstance(date_str, str) or not str(date_str).strip():
         return None
-    # Limpieza básica
+    # Limpieza heurística básica para patrones detectados
     clean = str(date_str).lower().replace("comentó el:", "").replace("reviewed:", "").strip()
     dt = dateparser.parse(clean, languages=['es', 'en'])
     return dt
 
 @st.cache_data
 def load_data():
+    """
+    Función Fundacional de Ingesta Tabular de Datos.
+    
+    Objetivos:
+    1. Intentar capturar DataFrame directamente de SQLite (ORM).
+    2. Fallback resiliente: Extraer CSV puro si no se encuentra la DB.
+    3. Construcción Sintética de Columnas Temporales (Ingeniería de Características).
+    4. Computación y asignación Dinámica de los KPIs como TSI (Índice de Satisfacción del Turista).
+    """
     df = pd.DataFrame() # Initialize df
     try:
+        # Se prefiere leer de la BD Centralizada por contención de integridad
         with engine.connect() as conn:
             df = pd.read_sql("SELECT * FROM reviews", conn)
         if df.empty:
             st.warning("[WARN] La base de datos está vacía. Intentando cargar CSV de respaldo...")
             raise Exception("DB Empty")
     except Exception as e:
+        # Recuperación contra fallos SQLite (Base de datos borrada o en re-build)
         st.info(f"[INFO] Cargando desde CSV (DB error: {e})...")
         try:
             df = pd.read_csv(config.RAW_REVIEWS_FILE)
@@ -59,16 +83,24 @@ def load_data():
             return pd.DataFrame()
 
     if not df.empty:
-        # Fechas
+        # Excluir registros sin comentario textual ('Esta entrada no tiene comentarios')
+        if 'positive' in df.columns:
+            has_placeholder = df['positive'].fillna('').str.lower().str.contains('esta entrada no tiene comentarios')
+            df = df[~has_placeholder].copy()
+        if 'sentiment_label' in df.columns:
+            df = df[df['sentiment_label'].isin(['POS', 'NEU', 'NEG'])].copy()
+
+        # Formateo de Lógica Temporal
         if 'date' in df.columns:
             df['date'] = df['date'].apply(clean_booking_date)
+            # Omitimos reseñas que no pudieron resolverse a nivel temporal para respetar integridad serie-tiempo
             df = df.dropna(subset=['date'])
 
-        # Nombres de Hoteles Formateados
+        # Formateo visual estético de Hoteles para el Filtro SelectBox
         if 'hotel_name' in df.columns:
             df['hotel_name'] = df['hotel_name'].astype(str).str.replace('-', ' ').str.title()
 
-        # Puntajes Duplicados
+        # Ingeniería de Puntajes (Normalización 0 a 1)
         if 'score' in df.columns:
             df['score'] = df['score'].apply(fix_score_value)
             df['score_numeric'] = pd.to_numeric(df['score'], errors='coerce')
@@ -77,28 +109,51 @@ def load_data():
             df['normalized_score'] = 0.0
             df['score_numeric'] = np.nan
 
+        # Extracción predictiva del número entero de noches
         if 'nights_stayed' in df.columns:
             df['nights_numeric'] = df['nights_stayed'].astype(str).str.extract(r'(\d+)').astype(float)
         else:
             df['nights_numeric'] = np.nan
 
-        # Métricas
+        # Ingeniería de Señales de Inteligencia Artificial (KPIs Compuestos y Ponderados)
         if 'sentiment_score_pos' in df.columns and 'sentiment_score_neg' in df.columns:
             df['compound_score'] = df['sentiment_score_pos'] - df['sentiment_score_neg']
-            # TSI calculation: Tourist Satisfaction Index
-            df['TSI'] = (0.6 * df['sentiment_score_pos'] + 0.4 * df['normalized_score']) * 100
+            # TSI calculation base
+            df['TSI_base'] = (0.6 * df['sentiment_score_pos'] + 0.4 * df['normalized_score']) * 100
         else:
             if 'score' in df.columns:
                  df['compound_score'] = (pd.to_numeric(df['score'], errors='coerce').fillna(5) - 5) / 5
-                 df['TSI'] = df['normalized_score'] * 100
+                 df['TSI_base'] = df['normalized_score'] * 100
             else:
                  df['compound_score'] = 0.0
-                 df['TSI'] = 0.0
+                 df['TSI_base'] = 0.0
+                 
+        # --- TSI Bayesiano (Penalización por Bajo Volumen) ---
+        # Calculamos promedios globales y definimos C (constante de confianza de reseñas requeridas)
+        if 'TSI_base' in df.columns and 'hotel_name' in df.columns:
+            C = 5.0 # Mínimo de reseñas para considerar al hotel altamente "creíble", valor de hiperparametro empírico
+            m = df['TSI_base'].mean()
+            
+            # Contamos cuántas reseñas tiene cada hotel
+            counts = df.groupby('hotel_name').size().to_dict()
+            
+            def bayesian_tsi(row):
+                R = row['TSI_base']
+                v = counts.get(row['hotel_name'], 1)
+                return (v / (v + C)) * R + (C / (v + C)) * m
+                
+            df['TSI'] = df.apply(bayesian_tsi, axis=1)
+        else:
+            df['TSI'] = 0.0
                  
     return df
 
 @st.cache_data
 def generate_wordcloud(text, colormap):
+    """
+    Construye Nubes de Tags visuales vectorizadas, procesándolas sobre CPU y
+    aislando stopwords para mantener la métrica léxica relavante al contexto Turístico.
+    """
     if not text or len(text) < 10:
         return None
     try:
@@ -163,10 +218,17 @@ else:
             df_filtered = df_filtered[df_filtered['traveler_type'] == sel_trav]
 
     if 'nationality' in df_filtered.columns:
-        opts = ["Todas"] + sorted(df_filtered['nationality'].dropna().unique())
+        valid_nats = sorted([n for n in df_filtered['nationality'].dropna().unique() if str(n).strip() != ''])
+        opts = ["Todas"] + valid_nats
         sel_nat = st.sidebar.selectbox("Nacionalidad", opts)
         if sel_nat != "Todas":
             df_filtered = df_filtered[df_filtered['nationality'] == sel_nat]
+
+    if 'language' in df_filtered.columns:
+        lang_map = {"Todos": "all", "Español (RoBERTuito)": "es", "Inglés (BERTweet)": "en"}
+        sel_lang = st.sidebar.selectbox("Idioma de la Reseña", list(lang_map.keys()))
+        if lang_map[sel_lang] != "all":
+            df_filtered = df_filtered[df_filtered['language'] == lang_map[sel_lang]]
 
     if 'room_type' in df_filtered.columns:
         opts = ["Todos"] + sorted(df_filtered['room_type'].dropna().unique())
@@ -175,7 +237,6 @@ else:
             df_filtered = df_filtered[df_filtered['room_type'] == sel_room]
 
     if 'nights_numeric' in df_filtered.columns and not df_filtered.empty:
-        # Check that night limits make sense
         valid_nights = df_filtered['nights_numeric'].dropna()
         if not valid_nights.empty:
             min_n = int(valid_nights.min())
@@ -183,8 +244,6 @@ else:
             if min_n < max_n:
                 sel_n = st.sidebar.slider("Noches Reservadas", min_value=min_n, max_value=max_n, value=(min_n, max_n))
                 df_filtered = df_filtered[(df_filtered['nights_numeric'] >= sel_n[0]) & (df_filtered['nights_numeric'] <= sel_n[1])]
-
-    pass
 
     # KPIs
     total_reviews = len(df_filtered)
@@ -200,22 +259,41 @@ else:
         c3.metric("Calificación Booking", f"{avg_score:.2f} / 10")
         c4.metric("Índice TSI (0-100)", f"{avg_tsi:.1f}")
 
-        # --- SECCIÓN VISUAL MEJORADA ---
+        # --- SECCIÓN VISUAL MEJORADA (100% EN ESPAÑOL) ---
         st.subheader("Análisis Visual Avanzado")
         
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-            "🏆 1. Hotel Ranking", 
-            "🧠 2. Sentiment Analysis", 
-            "👥 3. Tourist Profile", 
-            "🗺️ 4. Tourist Sentiment Map", 
-            "⚖️ 5. Score vs Sentiment", 
-            "🔥 6. Hotel Controversy", 
-            "☁️ 7. WordCloud Insights",
-            "🗄️ 8. Explorador Crudo"
+            "1. Ranking de Hoteles (TSI)", 
+            "2. Análisis de Sentimiento", 
+            "3. Perfil del Turista", 
+            "4. Mapa Demográfico", 
+            "5. Calificación vs. Sentimiento", 
+            "6. Controversia Hotelera", 
+            "7. Nubes de Palabras",
+            "8. Explorador de Reseñas"
         ])
 
+        col_rename_es = {
+            'hotel_name': 'Hotel',
+            'title': 'Título',
+            'positive': 'Comentario Positivo',
+            'negative': 'Comentario Negativo',
+            'score': 'Calificación',
+            'sentiment_label': 'Polaridad IA',
+            'sentiment_score_pos': 'Prob. Positiva',
+            'sentiment_score_neg': 'Prob. Negativa',
+            'sentiment_score_neu': 'Prob. Neutra',
+            'TSI': 'Índice TSI',
+            'nationality': 'Nacionalidad',
+            'traveler_type': 'Tipo de Viajero',
+            'room_type': 'Habitación',
+            'nights_stayed': 'Estancia',
+            'language': 'Idioma',
+            'date': 'Fecha'
+        }
+
         with tab1:
-            st.markdown("#### Clasificación de Hoteles (Tourist Satisfaction Index)")
+            st.markdown("#### Clasificación de Hoteles (Índice de Satisfacción del Turista - TSI)")
             if 'TSI' in df_filtered.columns and not df_filtered.empty and selected_hotel == "Todos":
                 ranking = df_filtered.groupby('hotel_name').agg(
                     TSI_Promedio=('TSI', 'mean'),
@@ -225,7 +303,12 @@ else:
                 col_l, col_r = st.columns(2)
                 with col_l:
                     st.markdown("**Top Hoteles (Detalle Numérico)**")
-                    st.dataframe(ranking.head(15).style.background_gradient(cmap='Greens'), width="stretch")
+                    ranking_display = ranking.head(15).rename(columns={
+                        'hotel_name': 'Hotel',
+                        'TSI_Promedio': 'Índice TSI Promedio',
+                        'Volumen': 'Volumen de Reseñas'
+                    })
+                    st.dataframe(ranking_display.style.background_gradient(cmap='Greens'), width="stretch")
                 
                 with col_r:
                     st.markdown("**Top 10 Hoteles por Índice TSI (Interactivo)**")
@@ -248,7 +331,7 @@ else:
                     fig_pie = px.pie(
                         values=counts.values, 
                         names=counts.index, 
-                        title="Proporción General de Etiquetas NLP",
+                        title="Proporción General de Etiquetas de Sentimiento (PLN)",
                         color=counts.index,
                         color_discrete_map={'POS': '#28a745', 'NEU': '#ffc107', 'NEG': '#dc3545'}
                     )
@@ -266,7 +349,7 @@ else:
                         st.plotly_chart(fig_ts, width="stretch")
 
         with tab3:
-            st.markdown("#### Perfil del Turista vs Satisfacción General")
+            st.markdown("#### Perfil del Turista vs. Satisfacción General")
             col_t1, col_t2 = st.columns(2)
             with col_t1:
                 st.markdown("**Sentimiento Positivo por Tipo de Viajero**")
@@ -282,21 +365,22 @@ else:
                     n_stats = df_filtered.groupby('nights_numeric').agg(mean_pos=('sentiment_score_pos', 'mean'), count=('id', 'count')).reset_index()
                     n_stats = n_stats[n_stats['count'] > 5]
                     fig_nights = px.line(n_stats, x='nights_numeric', y='mean_pos', markers=True,
-                                         title="Noches de Estancia vs Sentimiento Positivo", labels={'nights_numeric': 'Noches Estancia', 'mean_pos': 'Sentimiento Positivo'},
+                                         title="Noches de Estancia vs. Sentimiento Positivo", labels={'nights_numeric': 'Noches de Estancia', 'mean_pos': 'Sentimiento Positivo'},
                                          template="plotly_white")
                     st.plotly_chart(fig_nights, width="stretch")
 
         with tab4:
-            st.markdown("#### Tourist Sentiment Map (Heatmap Interactivo)")
+            st.markdown("#### Mapa de Calor Demográfico de Satisfacción")
             if 'nationality' in df_filtered.columns and 'traveler_type' in df_filtered.columns and not df_filtered.empty:
-                st.markdown("Identifica los perfiles combinados más satisfechos considerando su probabilidad de sentimiento positivo.")
+                st.markdown("Identifica los perfiles combinados más satisfechos (turistas nacionales y extranjeros) considerando su probabilidad de sentimiento positivo.")
                 
-                # Top nationalities to prevent huge heatmaps
-                top_nats = df_filtered['nationality'].value_counts().head(20).index
-                df_heat = df_filtered[df_filtered['nationality'].isin(top_nats)]
+                # Principales nacionalidades (excluyendo cadenas vacías)
+                valid_nat = df_filtered[df_filtered['nationality'].notna() & (df_filtered['nationality'].astype(str).str.strip() != '')]
+                top_nats = valid_nat['nationality'].value_counts().head(20).index
+                df_heat = valid_nat[valid_nat['nationality'].isin(top_nats)]
                 
                 pivot = df_heat.pivot_table(index='nationality', columns='traveler_type', 
-                                                values='sentiment_score_pos', aggfunc='mean').fillna(0)
+                                                values='sentiment_score_pos', aggfunc='mean')
                 if not pivot.empty:
                     fig_hm = px.imshow(pivot, labels=dict(x="Tipo de Viajero", y="Nacionalidad", color="Sentimiento POS"),
                                          x=pivot.columns, y=pivot.index, color_continuous_scale='RdYlGn',
@@ -314,16 +398,16 @@ else:
                         
                     heatmap_reviews = df_filtered[(df_filtered['nationality'] == sel_heat_nat) & (df_filtered['traveler_type'] == sel_heat_trav)]
                     if not heatmap_reviews.empty:
-                        disp_cols = ['title', 'hotel_name', 'positive', 'negative', 'score', 'sentiment_label', 'sentiment_score_pos']
+                        disp_cols = ['title', 'hotel_name', 'positive', 'negative', 'score', 'language', 'sentiment_label', 'sentiment_score_pos']
                         av_cols = [c for c in disp_cols if c in heatmap_reviews.columns]
-                        st.dataframe(heatmap_reviews[av_cols], width="stretch")
+                        st.dataframe(heatmap_reviews[av_cols].rename(columns=col_rename_es), width="stretch")
                     else:
                         st.info("No hay reseñas para esta combinación exacta.")
                 else:
                     st.info("Los cruces de datos están vacíos con el filtro actual.")
 
         with tab5:
-            st.markdown("#### Score vs Sentiment Consistency Analysis")
+            st.markdown("#### Consistencia: Calificación Numérica vs. Sentimiento IA")
             if 'score_numeric' in df_filtered.columns and 'sentiment_score_pos' in df_filtered.columns and not df_filtered.empty:
                 valid_df = df_filtered[np.isfinite(df_filtered['score_numeric']) & np.isfinite(df_filtered['sentiment_score_pos'])].copy()
                 valid_df['score_numeric_jitter'] = valid_df['score_numeric'] + np.random.normal(0, 0.15, size=len(valid_df))
@@ -333,12 +417,12 @@ else:
                                          hover_data=['title', 'hotel_name', 'score_numeric'],
                                          color_discrete_map={'POS': '#28a745', 'NEU': '#ffc107', 'NEG': '#dc3545'},
                                          title="Densidad de Evaluaciones: Calificación Numérica contra Probabilidad Positiva",
-                                         labels={'score_numeric_jitter': 'Calificación Booking (Con variación visual)', 'sentiment_score_pos': 'Probabilidad NLP Positiva'}
+                                         labels={'score_numeric_jitter': 'Calificación Booking (con variación visual)', 'sentiment_score_pos': 'Probabilidad Positiva (PLN)'}
                                          )
                 st.plotly_chart(fig_scatter, width="stretch")
 
         with tab6:
-            st.markdown("#### Hotel Controversy Detection")
+            st.markdown("#### Detección de Controversia y Polarización Hotelera")
             if 'hotel_name' in df_filtered.columns and 'sentiment_score_pos' in df_filtered.columns and not df_filtered.empty:
                 controv = df_filtered.groupby('hotel_name').agg(
                     mean_pos=('sentiment_score_pos', 'mean'),
@@ -353,12 +437,12 @@ else:
                                              title="Matriz de Controversia por Propiedad",
                                              labels={'mean_pos': 'Promedio de Sentimiento Positivo', 'std_pos': 'Desviación Estándar (Polarización/Controversia)'})
                     st.plotly_chart(fig_controv, width="stretch")
-                    st.caption("Burbujas en el cuadrante superior representan gran controversia. El tamaño = Volúmen de Reseñas evaluadas.")
+                    st.caption("Las burbujas en el cuadrante superior representan alta controversia. Tamaño de la burbuja = Volumen de reseñas evaluadas.")
                 else:
                     st.info("Insuficientes datos en la agrupación (mín. 10 reseñas requeridas) para calcular la controversia.")
 
         with tab7:
-            st.markdown("#### WordCloud Insights (Léxico Textual)")
+            st.markdown("#### Nubes de Palabras Polarizadas (Léxico Turístico)")
             col_wc1, col_wc2 = st.columns(2)
             with col_wc1:
                 st.markdown("##### Comentarios Positivos")
@@ -376,7 +460,7 @@ else:
                     ax_wc1.axis("off")
                     st.pyplot(fig_wc1, bbox_inches='tight', pad_inches=0)
                 else:
-                    st.warning("Insuficientes tokens positivos.")
+                    st.warning("Insuficientes términos positivos.")
             
             with col_wc2:
                 st.markdown("##### Comentarios Negativos")
@@ -394,8 +478,9 @@ else:
                     ax_wc2.axis("off")
                     st.pyplot(fig_wc2, bbox_inches='tight', pad_inches=0)
                 else:
-                    st.warning("Insuficientes tokens negativos.")
+                    st.warning("Insuficientes términos negativos.")
 
         with tab8:
-            st.markdown("#### Explorador de Datos Crudos")
-            st.dataframe(df_filtered, width="stretch")
+            st.markdown("#### Explorador de Reseñas Depuradas")
+            export_cols = [c for c in col_rename_es.keys() if c in df_filtered.columns]
+            st.dataframe(df_filtered[export_cols].rename(columns=col_rename_es), width="stretch")
